@@ -34,12 +34,96 @@ The system is built on these core components:
 - **Web API Layer**: Connecting client interfaces to the agent system
 - **Responsive Frontend**: Providing an intuitive chat experience
 
+## Project Structure
+
+```
+src/
+└── hypnobot/
+    ├── agents/              # Agent definitions
+    │   ├── client_agent.py  # Client-facing agent 
+    │   └── qa_agent.py      # QA/Safety agent
+    ├── tasks/               # Task definitions
+    │   ├── chat_task.py     # User interaction task
+    │   └── review_task.py   # Content review task
+    ├── crew/                # Crew definitions
+    │   ├── hypno_crew.py    # Main crew implementation
+    │   └── processes.py     # Process-based workflow
+    ├── config/              # Configuration files
+    │   ├── agents.yaml      # Agent configuration
+    │   ├── tasks.yaml       # Task configuration
+    │   └── safety_rules.yaml# Safety rules
+    ├── utils/               # Utility functions
+    │   └── logging.py       # Logging utilities
+    └── main.py              # Application entry point
+```
+
 ## Getting Started
 
-1. Clone this repository
-2. Install dependencies: `npm install`
-3. Configure environment variables (see `.env.example`)
-4. Run the development server: `npm run dev`
+### Prerequisites
+
+- Python 3.9 or higher
+- OpenAI API key
+
+### Installation
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/hypno-chat-bot.git
+   cd hypno-chat-bot
+   ```
+
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Configure environment variables by creating a `.env` file based on `.env.example`:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+
+### Running the Chatbot
+
+#### Interactive Mode
+
+Run the chatbot in interactive mode:
+
+```
+python scripts/run.py -i
+```
+
+Or use the Crew approach instead of Process:
+
+```
+python scripts/run.py -i --use-crew
+```
+
+#### Process a Single Message
+
+```
+python scripts/run.py -m "What is hypnotherapy and how does it work?"
+```
+
+## Development
+
+### Configuration
+
+The chatbot behavior can be customized by modifying the YAML configuration files:
+
+- `src/hypnobot/config/agents.yaml`: Agent roles, goals, and parameters
+- `src/hypnobot/config/tasks.yaml`: Task descriptions and expected outputs
+- `src/hypnobot/config/safety_rules.yaml`: Safety rules and intervention levels
+
+### Adding Knowledge
+
+To add knowledge to the chatbot:
+
+1. Create markdown files in the `src/hypnobot/knowledge/content` directory
+2. Organize content into subdirectories (methods, techniques, faq, etc.)
+3. Run the indexing script to update the vector database:
+   ```
+   python scripts/index_knowledge.py
+   ```
 
 ## License
 
