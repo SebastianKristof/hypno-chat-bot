@@ -1,6 +1,6 @@
 # Agent Prompts: Hypnotherapy Multi-Agent Chatbot
 
-This document defines the system prompts, role definitions, and examples for both the client-facing and QA/safety agents in the hypnotherapy multi-agent chatbot system.
+This document defines the sample system prompts, role definitions, and examples for both the client-facing and QA/safety agents in the hypnotherapy multi-agent chatbot system.
 
 ## 1. Client-Facing Agent Prompt
 

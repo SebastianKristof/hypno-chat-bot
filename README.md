@@ -34,17 +34,6 @@ The system is built on these core components:
 - **Web API Layer**: Connecting client interfaces to the agent system
 - **Responsive Frontend**: Providing an intuitive chat experience
 
-## Project Documentation
-
-Comprehensive project documentation is available in the `.cursor-rules` directory:
-
-- [Project Overview](.cursor-rules/project-overview.md) - General project introduction and requirements
-- [Technical Architecture](.cursor-rules/technical-architecture.md) - System design and component specifications
-- [Development Roadmap](.cursor-rules/development-roadmap.md) - Implementation timeline and milestones
-- [Data Model Specification](.cursor-rules/data-model-specification.md) - Database schemas and data structures
-- [Safety Protocols](.cursor-rules/safety-protocols.md) - Content guidelines and safety procedures
-- [Agent Prompts](.cursor-rules/agent-prompts.md) - System prompts for AI agents
-
 ## Getting Started
 
 1. Clone this repository
