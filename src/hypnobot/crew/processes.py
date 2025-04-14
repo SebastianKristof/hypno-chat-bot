@@ -1,6 +1,7 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
-from crewai import Process, Agent, Task
+from crewai import Crew, Agent, Task
+from crewai.process import Process
 
 from hypnobot.agents import ClientAgent, QAAgent
 from hypnobot.tasks import ChatTask, ReviewTask
@@ -30,48 +31,57 @@ class HypnoChatProcess:
         self.chat_task_creator = ChatTask()
         self.review_task_creator = ReviewTask()
     
-    def create_process(self, user_message: str) -> Process:
-        """Create a CrewAI process for handling a user message.
+    def _extract_text_from_crew_output(self, crew_output: Any) -> str:
+        """Extract text from a CrewOutput object or other result type.
+        
+        Args:
+            crew_output: Output from crew.kickoff(), which could be
+                a CrewOutput object, string, or other type.
+                
+        Returns:
+            The extracted text as a string.
+        """
+        # Handle CrewOutput object from newer crewai versions
+        if hasattr(crew_output, "raw_output"):
+            return str(crew_output.raw_output)
+        elif hasattr(crew_output, "output"):
+            return str(crew_output.output)
+        # For crewai >=0.23.0, results attribute might contain task outputs
+        elif hasattr(crew_output, "results") and hasattr(crew_output.results, "values"):
+            # Try to get the first result
+            values = list(crew_output.results.values())
+            if values:
+                return str(values[0])
+        # Handle simple string output
+        elif isinstance(crew_output, str):
+            return crew_output
+        # Last resort: convert to string
+        return str(crew_output)
+    
+    def create_process(self, user_message: str) -> Crew:
+        """Create a CrewAI crew for handling a user message.
         
         Args:
             user_message: The user's message text.
             
         Returns:
-            A configured CrewAI Process instance.
+            A configured CrewAI Crew instance.
         """
         # Create the chat task
         chat_task = self.chat_task_creator.create_task(user_message)
         chat_task.agent = self.client_agent
         
-        # Define a placeholder for the review task that will be created after chat task completes
-        # We'll use the output of the chat task as input to this task
-        def create_review_task(chat_result: str) -> Task:
-            review_task = self.review_task_creator.create_task(chat_result)
-            review_task.agent = self.qa_agent
-            return review_task
+        # In the newer crewai versions, direct task dependencies work differently
+        # We need to use a callback approach for the task chain
         
-        # Define the process
-        process = Process(
-            name="HypnotherapyChatProcess",
-            description="Process user queries with safety monitoring",
-            tasks=[chat_task],  # Start with just the chat task
+        # Create the crew with just the chat task initially
+        crew = Crew(
             agents=[self.client_agent, self.qa_agent],
+            tasks=[chat_task],
+            verbose=True
         )
         
-        # Define task callbacks
-        @process.on_task_complete(chat_task)
-        def on_chat_complete(result: str) -> Dict[str, Any]:
-            """Callback for when chat task completes."""
-            logger.info("Chat task completed, creating review task...")
-            
-            # Create and add the review task with the chat result
-            review_task = create_review_task(result)
-            process.add_task(review_task)
-            
-            # Store the chat result for later reference
-            return {"chat_result": result}
-        
-        return process
+        return crew
     
     def process_message(self, user_message: str) -> Dict[str, Any]:
         """Process a user message using the defined process.
@@ -83,18 +93,67 @@ class HypnoChatProcess:
             A dictionary containing the processing results.
         """
         try:
-            # Create and run the process
-            process = self.create_process(user_message)
-            result = process.execute()
+            # Create and run the crew for the chat task
+            crew = self.create_process(user_message)
+            crew_output = crew.kickoff()
             
-            # Extract and return the final result
-            return {
-                "original_response": result.get("chat_result", ""),
-                "final_response": result.get("final_result", result),
-                "safety_level": result.get("safety_level", 0),
-                "metadata": {k: v for k, v in result.items() 
-                           if k not in ["chat_result", "final_result", "safety_level"]},
-            }
+            # Extract the actual text result from the CrewOutput object
+            chat_result = self._extract_text_from_crew_output(crew_output)
+            logger.info(f"Chat result: {chat_result}")
+            
+            # Safety check - only proceed with QA if we have a valid chat result
+            if not chat_result or (isinstance(chat_result, str) and len(chat_result.strip()) == 0):
+                return {
+                    "original_response": "",
+                    "final_response": "I apologize, but I couldn't generate a response. Please try again.",
+                    "safety_level": 2,  # Cautious middle ground
+                    "metadata": {"error": "Empty chat result"},
+                }
+            
+            # Now run a separate QA check on the chat result
+            try:
+                # Create a QA review task with the chat result
+                review_task = self.review_task_creator.create_task(chat_result)
+                review_task.agent = self.qa_agent
+                
+                # Create a separate crew just for the review
+                review_crew = Crew(
+                    agents=[self.qa_agent],
+                    tasks=[review_task],
+                    verbose=True
+                )
+                
+                # Run the review
+                review_output = review_crew.kickoff()
+                review_result = self._extract_text_from_crew_output(review_output)
+                logger.info(f"Review result: {review_result}")
+                
+                # Determine safety level from review result
+                safety_level = 0  # Default - safe
+                if isinstance(review_result, str):
+                    if "unsafe" in review_result.lower():
+                        safety_level = 2  # Unsafe
+                    elif "caution" in review_result.lower():
+                        safety_level = 1  # Caution
+                
+                # Use the original chat result as the response
+                return {
+                    "original_response": chat_result,
+                    "final_response": chat_result,  # Could be modified based on review in future
+                    "safety_level": safety_level,
+                    "metadata": {"review_result": review_result},
+                }
+                
+            except Exception as review_error:
+                logger.error(f"Error during review: {str(review_error)}")
+                # If review fails, we still return the chat result but mark it with caution
+                return {
+                    "original_response": chat_result,
+                    "final_response": chat_result,
+                    "safety_level": 1,  # Caution since review failed
+                    "metadata": {"error": f"Review error: {str(review_error)}"},
+                }
+            
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")
             return {

@@ -73,10 +73,6 @@ class ChatTask:
             "A calming, clear response that addresses the user's question."
         )
         
-        # Get agent name from config if not provided
-        if agent_name is None:
-            agent_name = self.config.get("agent", "client_agent")
-        
         # Get context if available
         context = self.config.get("context", [])
         
@@ -88,8 +84,10 @@ class ChatTask:
         return Task(
             description=description,
             expected_output=expected_output,
-            agent=agent_name,  # This will be replaced with the actual agent instance by CrewAI
             context=context,
+            async_execution=False,
+            human_input=None,
+            output_file=None
         )
         
     def is_using_default_config(self) -> bool:
