@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+setup.py
+src/hypnobot/__init__.py
+src/hypnobot/main.py
+src/hypnobot/test_config.py
+src/hypnobot.egg-info/PKG-INFO
+src/hypnobot.egg-info/SOURCES.txt
+src/hypnobot.egg-info/dependency_links.txt
+src/hypnobot.egg-info/requires.txt
+src/hypnobot.egg-info/top_level.txt

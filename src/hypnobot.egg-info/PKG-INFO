@@ -1,3 +1,26 @@
+Metadata-Version: 2.4
+Name: hypnobot
+Version: 0.1.0
+Summary: A sophisticated multi-agent hypnotherapy chatbot system.
+License: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: crewai>=0.5.0
+Requires-Dist: langchain>=0.1.0
+Requires-Dist: openai>=1.3.0
+Requires-Dist: faiss-cpu>=1.7.4
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: uvicorn>=0.23.2
+Requires-Dist: pydantic>=2.4.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: PyYAML>=6.0.1
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: black>=23.3.0; extra == "dev"
+Requires-Dist: isort>=5.12.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Dynamic: requires-python
+
 # Hypnotherapy Multi-Agent Chatbot
 
 A sophisticated multi-agent chatbot system designed to support a hypnotherapy practice through client education, session planning assistance, and between-session guidance with integrated safety monitoring.

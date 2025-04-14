@@ -11,21 +11,32 @@ This project uses [CrewAI](mdc:https:/github.com/joaomdmoura/crewai), an open-so
 
 We're building a hypnotherapy chatbot using CrewAI agents and tasks, structured as YAML files and Python modules.
 
----
+## When you need more information or to understand the project
+Check the files in ./cursor-rules folder for project information.
 
-## 📑 Project Documentation
+1. **index.md** - Main documentation index with links to all other documentation files for the hypnotherapy chatbot project.
 
-### 🌟 Core Documentation
-- ✅ [CrewAI Best Practices](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/crewai-best-practices.md) - Guidelines for implementing multi-agent chatbots
-- ✅ [Updated Project Structure](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/updated-project-structure.md) - Recommended directory structure and components
-- ✅ [Simplified POC Implementation](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/implementation-examples/simplified-poc.md) - Streamlined approach for quick POC development
+2. **project-structure.md** - Basic directory structure and file organization for the project, showing a simple tree layout.
 
-### 💡 Implementation Examples
-- ✅ [Process Workflow Example](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/implementation-examples/process-workflow.md) - How to implement CrewAI Process for agent collaboration
-- ✅ [Knowledge Tool Example](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/implementation-examples/knowledge-tool.md) - Implementing a knowledge retrieval tool
-- ✅ [Safety Tool Example](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/implementation-examples/safety-tool.md) - Implementing content safety evaluation
+3. **updated-project-structure.md** - Comprehensive and detailed project structure with explanations of each directory and file's purpose. Includes implementation strategy and directory hierarchy.
 
----
+4. **project-overview.md** - Comprehensive overview of the project objectives and approaches for the hypnotherapy chatbot.
+
+5. **.cursor-rules.mdc** - Primary Cursor configuration with CrewAI integration guidelines.
+
+6. **agents.md** - Contains YAML configuration for the two main agents (support_assistant and qa_agent) with their roles, goals, and backstories, plus task definitions.
+
+7. **agent-prompts.md** - Detailed system prompts for both agents with comprehensive instructions, guidelines, and few-shot examples for handling different scenarios.
+
+8. **safety-protocols.md** - Content safety rules and intervention protocols for ensuring the chatbot handles sensitive situations appropriately.
+
+9. **rag-tool.md** - Implementation details for Retrieval-Augmented Generation to provide accurate hypnotherapy information.
+
+10. **dev-env-hosting.md** - Development environment setup and deployment guidance.
+
+11. **crewai-best-practices.md** - Detailed best practices for implementing a multi-agent chatbot using CrewAI, including architecture principles, tool implementation, agent configuration, and testing approaches.
+
+12. **implementation-examples/** - Directory containing sample code and implementation examples.
 
 ## 🧠 When You're Not Sure About Something...
 
@@ -71,32 +82,12 @@ agent_name:
 
 Make sure to format these cleanly. The agents/tasks are imported via Python and injected into the Crew.
 
-## 💬 Project Focus: POC Development
-
-This project is currently in the **POC phase**, with the following priorities:
-- **Quick implementation**: Focus on a working prototype, not a production-ready system
-- **Minimal structure**: Simplified file organization and component architecture
-- **Extensibility**: Design with future expansion in mind, but don't over-engineer now
-- **Core functionality**: Focus on basic chat and safety features before adding advanced capabilities
-
-For POC implementation guidance, refer to the [Simplified POC Implementation](mdc:/Users/seb/git_personal/hypno-chat-bot/.cursor-rules/implementation-examples/simplified-poc.md) guide.
-
-## 💬 When to Reference Implementation Examples
-
-- **Simplified POC**: Start here for the quickest path to a working prototype
-- **Process Workflow**: When implementing agent collaboration flows or task sequences
-- **Knowledge Tool**: When building retrieval tools for hypnotherapy content
-- **Safety Tool**: When implementing content moderation and safety filtering
-
 ## 💬 Suggested Prompts for You to Use
 
 ```
 "Show me the full class definition of Agent from the CrewAI GitHub."
 "Based on the official docs, how is a tool expected to behave?"
 "Validate this agents.yaml file using the schema from CrewAI."
-"How should I implement the safety rules based on the safety tool example?"
-"What's the recommended way to structure the knowledge base according to the examples?"
-"What's the simplest way to implement this for the POC phase?"
 ```
 
 ## 🤖 Model Guidance
