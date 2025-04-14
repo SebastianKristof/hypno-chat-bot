@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 from hypnobot.crew import HypnoCrew, HypnoChatProcess
 from hypnobot.utils.logging import setup_logging, get_logger
+from hypnobot.agents import ClientAgent, QAAgent
+from hypnobot.tasks import ChatTask, ReviewTask
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,6 +14,37 @@ load_dotenv()
 # Set up logging
 setup_logging()
 logger = get_logger(__name__)
+
+def check_default_configurations() -> Dict[str, bool]:
+    """Check if any components are using default configurations.
+    
+    Returns:
+        A dictionary mapping component names to whether they're using defaults.
+    """
+    client_agent = ClientAgent()
+    qa_agent = QAAgent()
+    chat_task = ChatTask()
+    review_task = ReviewTask()
+    
+    return {
+        "client_agent": client_agent.is_using_default_config(),
+        "qa_agent": qa_agent.is_using_default_config(),
+        "chat_task": chat_task.is_using_default_config(),
+        "review_task": review_task.is_using_default_config(),
+    }
+
+def display_config_warnings():
+    """Check for default configurations and display warnings if found."""
+    default_configs = check_default_configurations()
+    using_defaults = any(default_configs.values())
+    
+    if using_defaults:
+        print("\n⚠️  WARNING: Some components are using default configurations:")
+        for component, is_default in default_configs.items():
+            if is_default:
+                print(f"  - {component} is using default configuration")
+        print("  This may affect the behavior of the chatbot.")
+        print("  Check your YAML configuration files.\n")
 
 def process_message(message: str, use_process: bool = True) -> Dict[str, Any]:
     """Process a user message using the hypnotherapy chatbot.
@@ -59,6 +92,9 @@ def main():
     parser.add_argument(
         "--use-crew", action="store_true", help="Use Crew instead of Process"
     )
+    parser.add_argument(
+        "--check-config", action="store_true", help="Check configuration status and exit"
+    )
     
     args = parser.parse_args()
     
@@ -69,10 +105,22 @@ def main():
         print("Please set it in the .env file or as an environment variable.")
         return 1
     
+    # Check configuration if requested
+    if args.check_config:
+        default_configs = check_default_configurations()
+        print("Configuration Status:")
+        for component, is_default in default_configs.items():
+            status = "Default" if is_default else "Custom (from YAML)"
+            print(f"  {component}: {status}")
+        return 0
+    
     if args.interactive:
         # Interactive mode
         print("Hypnotherapy Chatbot - Interactive Mode")
         print("Type 'exit' or 'quit' to end the session.")
+        
+        # Display configuration warnings
+        display_config_warnings()
         
         while True:
             # Get user input

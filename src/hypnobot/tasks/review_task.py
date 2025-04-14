@@ -26,6 +26,7 @@ class ReviewTask:
         self.config_path = config_path or os.path.join(
             os.path.dirname(__file__), "..", "config", "tasks.yaml"
         )
+        self.using_default_config = False
         self.config = self._load_config()
     
     def _load_config(self) -> Dict[str, Any]:
@@ -33,9 +34,14 @@ class ReviewTask:
         try:
             with open(self.config_path, "r") as file:
                 config = yaml.safe_load(file)
-                return config.get("qa_review_task", {})
+                task_config = config.get("qa_review_task", {})
+                if not task_config:
+                    logger.warning("Review task configuration is empty or missing in YAML")
+                    self.using_default_config = True
+                return task_config
         except Exception as e:
             logger.error(f"Error loading review task config: {e}")
+            self.using_default_config = True
             # Return a default configuration if loading fails
             return {
                 "description": "Review the chatbot response for safety and accuracy.",
@@ -75,10 +81,22 @@ class ReviewTask:
         # Get context if available
         context = self.config.get("context", [])
         
+        # Log warning if using default configuration
+        if self.using_default_config:
+            logger.warning("Using default review task configuration")
+        
         # Create and return the task
         return Task(
             description=description,
             expected_output=expected_output,
             agent=agent_name,  # This will be replaced with the actual agent instance by CrewAI
             context=context,
-        ) 
+        )
+        
+    def is_using_default_config(self) -> bool:
+        """Check if the task is using default configuration.
+        
+        Returns:
+            True if using default configuration, False if using loaded configuration.
+        """
+        return self.using_default_config 

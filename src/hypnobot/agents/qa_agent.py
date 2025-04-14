@@ -27,6 +27,7 @@ class QAAgent:
         self.config_path = config_path or os.path.join(
             os.path.dirname(__file__), "..", "config", "agents.yaml"
         )
+        self.using_default_config = False
         self.config = self._load_config()
         self.agent = self._create_agent()
     
@@ -35,9 +36,14 @@ class QAAgent:
         try:
             with open(self.config_path, "r") as file:
                 config = yaml.safe_load(file)
-                return config.get("qa_agent", {})
+                agent_config = config.get("qa_agent", {})
+                if not agent_config:
+                    logger.warning("QA agent configuration is empty or missing in YAML")
+                    self.using_default_config = True
+                return agent_config
         except Exception as e:
             logger.error(f"Error loading QA agent config: {e}")
+            self.using_default_config = True
             # Return a default configuration if loading fails
             return {
                 "role": "Hypnotherapy QA Specialist",
@@ -63,7 +69,7 @@ class QAAgent:
         )
         
         # Create the agent
-        return Agent(
+        agent = Agent(
             role=self.config.get("role", "Hypnotherapy QA Specialist"),
             goal=self.config.get("goal", "Review content for safety and ethical standards"),
             backstory=self.config.get("backstory", "You ensure all content meets professional standards."),
@@ -71,7 +77,21 @@ class QAAgent:
             allow_delegation=self.config.get("allow_delegation", False),
             llm=llm,
         )
+        
+        # Log warning if using default configuration
+        if self.using_default_config:
+            logger.warning("Using default QA agent configuration")
+        
+        return agent
     
     def get_agent(self) -> Agent:
         """Get the configured CrewAI agent instance."""
-        return self.agent 
+        return self.agent
+        
+    def is_using_default_config(self) -> bool:
+        """Check if the agent is using default configuration.
+        
+        Returns:
+            True if using default configuration, False if using loaded configuration.
+        """
+        return self.using_default_config 
