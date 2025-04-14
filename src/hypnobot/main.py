@@ -15,6 +15,28 @@ load_dotenv()
 setup_logging()
 logger = get_logger(__name__)
 
+def check_api_key() -> bool:
+    """Check if the OpenAI API key is properly set.
+    
+    Returns:
+        True if the API key seems valid, False otherwise.
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    
+    if not api_key:
+        logger.error("OPENAI_API_KEY environment variable is not set")
+        return False
+    
+    if api_key == "your_openai_api_key_here":
+        logger.error("OPENAI_API_KEY is set to the default value from .env.example")
+        return False
+    
+    # A very basic check for the key format
+    if not api_key.startswith("sk-"):
+        logger.warning("OPENAI_API_KEY does not start with 'sk-', might not be valid")
+    
+    return True
+
 def check_default_configurations() -> Dict[str, bool]:
     """Check if any components are using default configurations.
     
@@ -99,10 +121,10 @@ def main():
     args = parser.parse_args()
     
     # Check if OpenAI API key is set
-    if not os.environ.get("OPENAI_API_KEY"):
-        logger.error("OPENAI_API_KEY environment variable is not set.")
-        print("Error: OPENAI_API_KEY environment variable is not set.")
-        print("Please set it in the .env file or as an environment variable.")
+    if not check_api_key():
+        print("Error: OPENAI_API_KEY environment variable is not properly set.")
+        print("Please set it in the .env file (based on .env.example) or as an environment variable.")
+        print("NEVER commit your actual API key to the repository!")
         return 1
     
     # Check configuration if requested

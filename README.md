@@ -72,14 +72,28 @@ src/
    cd hypno-chat-bot
    ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+   ```
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-3. Configure environment variables by creating a `.env` file based on `.env.example`:
+4. Set up environment variables by creating a `.env` file based on `.env.example`:
    ```
-   OPENAI_API_KEY=your_openai_api_key_here
+   cp .env.example .env
+   ```
+   Then edit the `.env` file and add your OpenAI API key.
+
+   ⚠️ **IMPORTANT**: Never commit your actual API key to the repository! The `.env` file is already in `.gitignore` to prevent accidental commits.
+
+5. Verify your environment setup:
+   ```
+   python scripts/check_env.py
    ```
 
 ### Running the Chatbot
