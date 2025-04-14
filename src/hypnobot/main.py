@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Dict, Any
 import argparse
 from dotenv import load_dotenv
@@ -8,8 +9,17 @@ from hypnobot.utils.logging import setup_logging, get_logger
 from hypnobot.agents import ClientAgent, QAAgent
 from hypnobot.tasks import ChatTask, ReviewTask
 
-# Load environment variables from .env file
-load_dotenv()
+# Only load from .env if we're not in production
+if os.environ.get("ENVIRONMENT") != "production":
+    # Load environment variables from .env file as fallback
+    load_dotenv()
+    logger = get_logger(__name__)
+    logger.info("Loading configuration from .env file (development mode)")
+else:
+    # Set up logging first
+    setup_logging()
+    logger = get_logger(__name__)
+    logger.info("Running in production mode, using environment variables")
 
 # Set up logging
 setup_logging()
@@ -122,9 +132,15 @@ def main():
     
     # Check if OpenAI API key is set
     if not check_api_key():
+        is_production = os.environ.get("ENVIRONMENT") == "production"
         print("Error: OPENAI_API_KEY environment variable is not properly set.")
-        print("Please set it in the .env file (based on .env.example) or as an environment variable.")
-        print("NEVER commit your actual API key to the repository!")
+        
+        if is_production:
+            print("In production mode, please set it as an environment variable on your hosting platform.")
+        else:
+            print("In development mode, please set it in the .env file (based on .env.example) or as an environment variable.")
+            print("NEVER commit your actual API key to the repository!")
+            
         return 1
     
     # Check configuration if requested

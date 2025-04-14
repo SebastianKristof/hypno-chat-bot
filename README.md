@@ -118,6 +118,38 @@ python scripts/run.py -i --use-crew
 python scripts/run.py -m "What is hypnotherapy and how does it work?"
 ```
 
+## Deployment
+
+The application supports two environment modes:
+
+### Development Mode (default)
+
+- Uses `.env` file for configuration
+- Good for local development and testing
+- Set by default when `ENVIRONMENT` is not specified
+
+### Production Mode
+
+- Uses environment variables directly from the hosting platform
+- Recommended for deployed environments
+- Set by specifying `ENVIRONMENT=production`
+
+To run in production mode:
+
+```bash
+# Linux/macOS
+export ENVIRONMENT=production
+export OPENAI_API_KEY=your_api_key_here
+python scripts/run.py -i
+
+# Windows PowerShell
+$env:ENVIRONMENT = "production"
+$env:OPENAI_API_KEY = "your_api_key_here"
+python scripts/run.py -i
+```
+
+When deploying to cloud platforms, configure these environment variables in your hosting provider's dashboard or deployment configuration.
+
 ## Development
 
 ### Configuration
