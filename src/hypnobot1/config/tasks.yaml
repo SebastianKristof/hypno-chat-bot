@@ -3,21 +3,23 @@ hypnotherapy_inquiry:
     {user_name} has asked the following about hypnotherapy:
     "{user_message}"
 
-    Provide accurate, ethical information about hypnotherapy that addresses 
-    their question. Be supportive and empathetic while maintaining appropriate 
-    therapeutic boundaries. Always be mindful of the limits of hypnotherapy
-    and avoid making promises about specific outcomes.
+    Provide a simple, easy-to-understand response about hypnotherapy that answers
+    their question. Use everyday language at a 7-8th grade reading level. Keep your
+    answer brief (3-5 short paragraphs maximum) and friendly, as if you're talking
+    to a friend.
+
+    Avoid technical terms, long explanations, and academic language. Use short
+    sentences and common words. Be supportive while still being accurate.
 
     If the question involves a crisis situation, mental health emergency,
-    or serious medical condition, provide appropriate referral information
-    rather than suggesting hypnotherapy as a solution.
+    or serious medical condition, provide a simple referral to professional help.
   expected_output: >
-    A clear, informative response that addresses the question while 
-    maintaining appropriate scope and boundaries. The response should be 
-    empathetic, accurate, and avoid promising specific outcomes.
+    A brief, friendly response in simple language (7-8th grade level) that directly
+    answers the question. Keep to 3-5 short paragraphs maximum. Use everyday words
+    and avoid technical terms or complex explanations.
 
-    Your answer should be concise but comprehensive, maintaining a friendly
-    and supportive tone throughout.
+    Sound conversational, like a knowledgeable friend giving advice, not like 
+    a textbook or academic paper.
   agent: "hypnotherapy_guide"
   tools: []
 
@@ -29,22 +31,22 @@ safety_review:
     The proposed response is:
     "{hypnotherapy_response}"
 
-    Carefully evaluate this response against these criteria:
+    Evaluate this response against these criteria:
     1. SAFETY: Does it address crisis situations appropriately? Does it avoid harmful suggestions?
-    2. SCOPE: Does it stay within the boundaries of hypnotherapy information?
-    3. ETHICS: Does it adhere to hypnotherapy ethical standards? Does it avoid promising specific outcomes?
-    4. ACCURACY: Is it factually accurate about hypnotherapy's capabilities?
-    5. BOUNDARIES: Does it maintain appropriate therapeutic boundaries?
-
-    If any issues are found, revise the response to address them while maintaining
-    the helpful and supportive tone.
+    2. SCOPE: Does it stay within appropriate boundaries?
+    3. ETHICS: Does it avoid promising specific outcomes?
+    4. SIMPLICITY: Is it written in simple language a 7-8th grader could understand?
+    5. BREVITY: Is it brief (3-5 short paragraphs maximum)?
+    
+    If the response is too long, too complex, or uses technical language, rewrite it
+    to be simpler, shorter, and more conversational while keeping the key points.
   expected_output: >
     Provide your assessment with the following structure:
 
     Safety Level Assessment: [0-4] 
     (0: safe, 1: minor concerns, 2: moderate concerns, 3: significant concerns, 4: unsafe)
 
-    The assistant's response after review is: "[Insert revised response here, or original if no changes needed]"
+    The assistant's response after review is: "[Insert revised response here, or original if no changes needed. Remember to keep it simple, brief, and at 7-8th grade level]"
 
     Modifications: [Describe any changes made to the original response, or "None needed" if no changes]
 
