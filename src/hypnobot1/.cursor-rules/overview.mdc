@@ -16,17 +16,3 @@ agents.yaml - Configuration for the Hypnotherapy Guide and Safety Specialist
 tasks.yaml - Configuration for the inquiry and review tasks
 crew.py - HypnoBot1Crew implementation following the Jupiter notebook pattern
 test_hypnobot1.py - Test script with similar structure to the original
-Main Improvements:
-Follows CrewAI's recommended approach with clearly defined agents and tasks
-Uses the proper sequential task flow as shown in the Jupiter notebook
-Employs crew memory for better context retention
-Passes variables through the inputs dictionary
-Creates tasks at runtime with the specific context needed
-Maintains the same YAML configuration for consistency with the original
-Workflow:
-Two separate Crew instances are created - one for the inquiry and one for the review
-First crew processes the user's message with the Hypnotherapy Guide
-Second crew reviews the response with the Safety Specialist
-Results are parsed and structured similarly to the original implementation
-The implementation successfully runs and produces the expected output in the test. When a valid API key is provided, it will use the actual agents to process the message; otherwise, it falls back to a simulated response for testing purposes.
-This approach combines the best of both worlds: the robust CrewAI patterns from the Jupiter notebook example and the flexible YAML configuration approach from the original HypnoBot implementation.

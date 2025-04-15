@@ -36,7 +36,7 @@ class HypnoBot1Crew:
             logger.warning("Failed to load agents configuration, using empty config")
         if not self.tasks_config:
             logger.warning("Failed to load tasks configuration, using empty config")
-        
+    
     def _create_agents(self) -> Dict[str, Agent]:
         """Create CrewAI agents from YAML configuration.
         
@@ -47,6 +47,17 @@ class HypnoBot1Crew:
         
         # Get API key from environment variable
         openai_api_key = os.environ.get("OPENAI_API_KEY")
+        logger.info(f"API key environment variable status: {'FOUND' if openai_api_key else 'NOT FOUND'}")
+        if openai_api_key:
+            logger.info(f"API key length: {len(openai_api_key)}")
+            logger.info(f"API key first 10 chars: {openai_api_key[:10]}...")
+            
+        # Check for specific patterns that might trigger OpenAI to reject the key
+        if openai_api_key and ("sk-proj-" in openai_api_key or "sk-" not in openai_api_key):
+            logger.warning(f"API key may be using a preview format that's not fully supported: {openai_api_key[:10]}...")
+            print("Warning: Your API key starts with 'sk-proj-' which indicates a preview/project format.")
+            print("This key format sometimes has compatibility issues with certain libraries.")
+            
         if not openai_api_key:
             logger.error("ERROR: OPENAI_API_KEY not found in environment variables")
             print("ERROR: OPENAI_API_KEY environment variable is not set.")
@@ -67,9 +78,14 @@ class HypnoBot1Crew:
             try:
                 # Configure the LLM
                 llm_config = config.get("llm", {})
+                model_name = llm_config.get("model", "gpt-4")
+                temperature = llm_config.get("temperature", 0.7)
+                
+                logger.info(f"Creating LLM with model={model_name}, temperature={temperature}")
+                
                 llm = ChatOpenAI(
-                    model=llm_config.get("model", "gpt-4"),
-                    temperature=llm_config.get("temperature", 0.7),
+                    model=model_name,
+                    temperature=temperature,
                     api_key=openai_api_key,
                 )
                 
@@ -116,6 +132,10 @@ class HypnoBot1Crew:
             description = inquiry_config.get("description", "")
             description = description.format(**context)
             
+            # Add language instruction to maintain natural conversation
+            language_instruction = "\nIMPORTANT: Please respond in the same language as the user's question to maintain a natural conversation."
+            description += language_instruction
+            
             # Get the expected output
             expected_output = inquiry_config.get("expected_output", "")
             
@@ -142,6 +162,10 @@ class HypnoBot1Crew:
             description = review_config.get("description", "")
             description = description.format(**context)
             
+            # Add language instruction to maintain same language
+            language_instruction = "\nIMPORTANT: Please maintain the same language as the original response in your review and any modifications."
+            description += language_instruction
+            
             # Get the expected output
             expected_output = review_config.get("expected_output", "")
             
@@ -162,11 +186,11 @@ class HypnoBot1Crew:
         
         return tasks
     
-    def _parse_qa_review(self, review_text: str) -> Dict[str, Any]:
+    def _parse_qa_review(self, review_text) -> Dict[str, Any]:
         """Parse the QA review text to extract structured information.
         
         Args:
-            review_text: The raw text response from the safety specialist
+            review_text: The raw text response from the safety specialist or CrewOutput object
             
         Returns:
             A dictionary containing the parsed components
@@ -183,6 +207,29 @@ class HypnoBot1Crew:
             return result
             
         try:
+            # Handle different types of review_text
+            logger.info(f"Review text type: {type(review_text)}")
+            
+            # If it's a CrewOutput object, try to extract text content
+            if hasattr(review_text, 'raw_output'):
+                logger.info("Converting CrewOutput to string using raw_output")
+                review_text = review_text.raw_output
+            elif hasattr(review_text, 'result'):
+                logger.info("Converting CrewOutput to string using result")
+                review_text = review_text.result
+            elif hasattr(review_text, '__str__'):
+                logger.info("Converting object to string using __str__")
+                review_text = str(review_text)
+                
+            # If review_text is still not a string, try to convert it
+            if not isinstance(review_text, str):
+                logger.warning(f"review_text is not a string: {type(review_text)}")
+                try:
+                    review_text = str(review_text)
+                except Exception as e:
+                    logger.error(f"Failed to convert review_text to string: {e}")
+                    return result
+            
             # Extract the modified response
             response_match = None
             
@@ -239,7 +286,10 @@ class HypnoBot1Crew:
             return result
     
     def process_message(self, user_message: str, user_name: str = "User") -> Dict[str, Any]:
-        """Process a user message using the CrewAI approach.
+        """Process a user message using the CrewAI approach with proper agent collaboration.
+        
+        This implementation leverages CrewAI's built-in task sequencing and agent collaboration
+        rather than creating separate crews and manually parsing outputs.
         
         Args:
             user_message: The user's message
@@ -255,7 +305,7 @@ class HypnoBot1Crew:
                 "user_name": user_name
             }
             
-            # Create inquiry task and process it first
+            # Create and execute the inquiry task first
             inquiry_tasks = self._create_tasks(context)
             if not inquiry_tasks:
                 raise ValueError("Failed to create inquiry task")
@@ -272,16 +322,28 @@ class HypnoBot1Crew:
             logger.info(f"Processing inquiry from {user_name}: {user_message[:50]}...")
             inquiry_result = inquiry_crew.kickoff()
             
+            # Extract the text from the inquiry result if needed
+            inquiry_text = inquiry_result
+            if hasattr(inquiry_result, 'raw_output'):
+                logger.info("Converting inquiry CrewOutput to string using raw_output")
+                inquiry_text = inquiry_result.raw_output
+            elif hasattr(inquiry_result, 'result'):
+                logger.info("Converting inquiry CrewOutput to string using result")
+                inquiry_text = inquiry_result.result
+            elif not isinstance(inquiry_result, str):
+                logger.info(f"Converting inquiry result of type {type(inquiry_result)} to string")
+                inquiry_text = str(inquiry_result)
+                
             # Add the response to the context for the review task
-            context["hypnotherapy_response"] = inquiry_result
+            context["hypnotherapy_response"] = inquiry_text
             
             # Create and process the review task
             review_tasks = self._create_tasks(context)
             if len(review_tasks) < 2:
                 logger.warning("Failed to create review task, skipping review")
                 return {
-                    "original_response": inquiry_result,
-                    "final_response": inquiry_result,
+                    "original_response": inquiry_text,
+                    "final_response": inquiry_text,
                     "safety_level": 0,
                     "metadata": {
                         "review_skipped": True
@@ -306,15 +368,16 @@ class HypnoBot1Crew:
             # Determine the final response
             final_response = parsed_review["modified_response"]
             if not final_response.strip():
-                final_response = inquiry_result
+                logger.info("Using original response as final response (no modified response found)")
+                final_response = inquiry_text
             
             # Return the structured result
             return {
-                "original_response": inquiry_result,
+                "original_response": inquiry_text,
                 "final_response": final_response,
                 "safety_level": parsed_review["safety_level"],
                 "metadata": {
-                    "review_result": review_result,
+                    "review_result": str(review_result),
                     "modifications": parsed_review["modifications"],
                     "reasoning": parsed_review["reasoning"]
                 }
