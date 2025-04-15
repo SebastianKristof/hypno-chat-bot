@@ -1,0 +1,53 @@
+hypnotherapy_inquiry:
+  description: >
+    {user_name} has asked the following about hypnotherapy:
+    "{user_message}"
+
+    Provide accurate, ethical information about hypnotherapy that addresses 
+    their question. Be supportive and empathetic while maintaining appropriate 
+    therapeutic boundaries. Always be mindful of the limits of hypnotherapy
+    and avoid making promises about specific outcomes.
+
+    If the question involves a crisis situation, mental health emergency,
+    or serious medical condition, provide appropriate referral information
+    rather than suggesting hypnotherapy as a solution.
+  expected_output: >
+    A clear, informative response that addresses the question while 
+    maintaining appropriate scope and boundaries. The response should be 
+    empathetic, accurate, and avoid promising specific outcomes.
+
+    Your answer should be concise but comprehensive, maintaining a friendly
+    and supportive tone throughout.
+  agent: "hypnotherapy_guide"
+  tools: []
+
+safety_review:
+  description: >
+    Review the response provided to {user_name}'s inquiry about hypnotherapy.
+    The original inquiry was: "{user_message}"
+    
+    The proposed response is:
+    "{hypnotherapy_response}"
+
+    Carefully evaluate this response against these criteria:
+    1. SAFETY: Does it address crisis situations appropriately? Does it avoid harmful suggestions?
+    2. SCOPE: Does it stay within the boundaries of hypnotherapy information?
+    3. ETHICS: Does it adhere to hypnotherapy ethical standards? Does it avoid promising specific outcomes?
+    4. ACCURACY: Is it factually accurate about hypnotherapy's capabilities?
+    5. BOUNDARIES: Does it maintain appropriate therapeutic boundaries?
+
+    If any issues are found, revise the response to address them while maintaining
+    the helpful and supportive tone.
+  expected_output: >
+    Provide your assessment with the following structure:
+
+    Safety Level Assessment: [0-4] 
+    (0: safe, 1: minor concerns, 2: moderate concerns, 3: significant concerns, 4: unsafe)
+
+    The assistant's response after review is: "[Insert revised response here, or original if no changes needed]"
+
+    Modifications: [Describe any changes made to the original response, or "None needed" if no changes]
+
+    Reasoning: [Brief explanation of your assessment and any modifications]
+  agent: "safety_specialist"
+  tools: [] 
