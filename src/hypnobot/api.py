@@ -5,10 +5,15 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field, validator
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from fastapi.responses import FileResponse
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("hypnobot-api")
 
 # Load environment variables
 load_dotenv()
@@ -21,7 +26,13 @@ from src.hypnobot.v2.hypnobot import HypnoBot
 
 # Define request and response models
 class HypnoBotRequest(BaseModel):
-    user_input: str
+    user_input: str = Field(..., min_length=1, max_length=10000)
+    
+    @validator('user_input')
+    def validate_user_input(cls, v):
+        if not v.strip():
+            raise ValueError("Input cannot be empty or only whitespace")
+        return v.strip()
 
 class HypnoBotResponse(BaseModel):
     response: str
@@ -34,15 +45,26 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app."""
     # Initialize the bot on startup
     global bot
-    # Check if API key is set
-    if not os.getenv("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEY not found in environment variables")
-    bot = HypnoBot()
+    try:
+        # Check if API key is set
+        if not os.getenv("OPENAI_API_KEY"):
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        
+        logger.info("Initializing HypnoBot...")
+        bot = HypnoBot()
+        logger.info("HypnoBot initialization complete.")
+        
+        yield  # This will run until the app shuts down
     
-    yield  # This will run until the app shuts down
+    except Exception as e:
+        logger.error(f"Error initializing HypnoBot: {str(e)}")
+        yield
     
-    # Cleanup on shutdown if needed
-    bot = None
+    finally:
+        # Cleanup on shutdown if needed
+        logger.info("Shutting down HypnoBot...")
+        bot = None
+        logger.info("HypnoBot shutdown complete.")
 
 # Initialize the FastAPI app
 app = FastAPI(
@@ -81,17 +103,30 @@ async def get_index():
 async def chat(request: HypnoBotRequest):
     """Process a chat message through the HypnoBot."""
     if not bot:
-        raise HTTPException(status_code=500, detail="Bot not initialized")
+        raise HTTPException(status_code=503, detail="Bot not initialized. Please try again later.")
     
     try:
+        # Log input length and truncate if necessary
+        input_length = len(request.user_input)
+        truncated = False
+        
+        if input_length > 1500:
+            logger.info(f"Truncating long input from {input_length} to 1500 characters")
+            truncated = True
+        
+        logger.info(f"Processing request: {request.user_input[:30]}...")
         response = bot.process_input(request.user_input)
+        
+        logger.info("Request processed successfully")
         return HypnoBotResponse(response=response)
     except Exception as e:
+        logger.error(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy"}
+    status = "healthy" if bot is not None else "initializing"
+    return {"status": status}
 
 # To run this app: uvicorn src.hypnobot.api:app --reload 

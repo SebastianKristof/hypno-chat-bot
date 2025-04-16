@@ -43,7 +43,7 @@ source venv/bin/activate
    ```
    pip install -r requirements.txt
    ```
-   
+
    If you encounter dependency conflicts, use the compatible versions:
    ```
    pip install -r requirements-compatible.txt
@@ -142,7 +142,7 @@ For dependency isolation and easier deployment, HypnoBot can be run using Docker
 
 3. For custom commands with the CLI version:
 
-   ```bash
+```bash
    # Single message mode
    docker-compose run hypnobot-cli python run_cli.py --single "What is hypnotherapy?"
    

@@ -25,25 +25,32 @@ def main():
     print("Type 'exit' to quit the chat")
     print("-" * 50)
     
-    # Initialize the bot
-    bot = HypnoBot()
-    
-    while True:
-        # Get user input
-        user_input = input("\nYou: ")
+    try:
+        # Initialize the bot
+        print("Initializing HypnoBot...")
+        bot = HypnoBot()
+        print("Initialization complete.")
         
-        # Check for exit command
-        if user_input.lower() in ('exit', 'quit', 'bye'):
-            print("HypnoBot: Goodbye! Take care.")
-            break
-        
-        # Process the input
-        try:
-            response = bot.process_input(user_input)
-            print(f"\nHypnoBot: {response}")
-        except Exception as e:
-            print(f"\nError: {str(e)}")
-            print("HypnoBot: I'm sorry, I encountered an error processing your request.")
+        while True:
+            # Get user input
+            user_input = input("\nYou: ")
+            
+            # Check for exit command
+            if user_input.lower() in ('exit', 'quit', 'bye'):
+                print("HypnoBot: Goodbye! Take care.")
+                break
+            
+            # Process the input
+            try:
+                print("Processing your request...")
+                response = bot.process_input(user_input)
+                print(f"\nHypnoBot: {response}")
+            except Exception as e:
+                print(f"\nError: {str(e)}")
+                print("HypnoBot: I'm sorry, I encountered an error processing your request.")
+    except Exception as e:
+        print(f"Error initializing HypnoBot: {str(e)}")
+        print("Please check your API key and dependencies.")
 
 if __name__ == "__main__":
     main() 

@@ -3,7 +3,7 @@ import sys
 from crewai import Crew, Process, Agent
 from string import Template
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from langchain_openai import ChatOpenAI
 
 # Import the agents and tasks from the config
@@ -42,7 +42,11 @@ class HypnoBot:
             for agent in [categorizer, support_agent, safety_officer, writing_coach, accessibility_agent]:
                 agent.llm = self.llm
                 
-            # Initialize the crew
+            # Initialize the categorization task
+            self.categorization_task = categorization_task
+            self.categorization_task.agent = categorizer
+            
+            # Initialize the full crew for appropriate queries
             self.crew = Crew(
                 agents=[
                     categorizer,
@@ -81,11 +85,50 @@ class HypnoBot:
         Returns:
             The final response after processing through all agents
         """
-        # Process the input through the crew
+        # Truncate input if it's too long (1500 character limit)
+        MAX_CHARS = 1500
+        original_length = len(user_input)
+        if original_length > MAX_CHARS:
+            user_input = user_input[:MAX_CHARS] + "..."
+        
+        # STEP 1: Categorize the inquiry
+        categorization_result = self.categorization_task.execute(inputs={"user_input": user_input})
+        
+        # Parse the categorization result
+        is_appropriate, category, explanation = self._parse_categorization(categorization_result)
+        
+        # STEP 2: If inappropriate, return a polite rejection
+        if not is_appropriate:
+            return f"I'm sorry, but I can't assist with this request.\n\nCategory: {category}\nReason: {explanation}"
+        
+        # STEP 3: For appropriate queries, run the full workflow
         result = self.crew.kickoff(inputs={'user_input': user_input})
+        
+        # Add note about truncation if input was truncated
+        if original_length > MAX_CHARS:
+            result += f"\n\n(Note: Your message was truncated from {original_length} to {MAX_CHARS} characters for processing.)"
         
         # Return the final output
         return result
+    
+    def _parse_categorization(self, result: str) -> Tuple[bool, str, str]:
+        """
+        Parse the categorization result to determine if the query is appropriate.
+        
+        Args:
+            result: The categorization result string
+            
+        Returns:
+            Tuple of (is_appropriate, category, explanation)
+        """
+        lines = result.strip().split("\n")
+        category = lines[0].upper() if lines else ""
+        explanation = "\n".join(lines[1:]) if len(lines) > 1 else ""
+        
+        # Check if the query is appropriate for hypnotherapy discussion
+        is_appropriate = "APPROPRIATE" in category
+        
+        return is_appropriate, category, explanation
     
     def format_task_template(self, task_description: str, inputs: Dict[str, Any]) -> str:
         """
