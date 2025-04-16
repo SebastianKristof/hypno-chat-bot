@@ -1,13 +1,13 @@
 ---
-description: Cursor Rules for CrewAI Hypnotherapy Chatbot
-globs: "**/*.{py,yaml,json,md}"
+description: 
+globs: 
 alwaysApply: true
 ---
 
 # 📘 Cursor Coding Assistant Rules for CrewAI (Hypno Chatbot)
 
 ## 🔍 Project Context
-This project uses [CrewAI](mdc:https:/github.com/joaomdmoura/crewai), an open-source Python framework for orchestrating multi-agent autonomous workflows.
+This project uses @CrewAI, an open-source Python framework for orchestrating multi-agent autonomous workflows.
 
 We're building a hypnotherapy chatbot using CrewAI agents and tasks, structured as YAML files and Python modules.
 
@@ -21,7 +21,7 @@ We're building a hypnotherapy chatbot using CrewAI agents and tasks, structured 
 
 4. If you're unsure how a class, method, or tool works, how to approach a task, or which CrewAI entities to use, always consult the official documentation:
   - ✅ CrewAI GitHub Repository (source code): https://github.com/crewAIInc/crewAI
-  - ✅ [CrewAI Official Docs](mdc:https:/docs.crewai.com): https://docs.crewai.com/introduction
+  - ✅ @CrewAI Official Docs: https://docs.crewai.com/introduction
 
 5. Always try to find the simplest way to solve a task in accordance with the CrewAI architectural best practices, aiming for building a simple, elegant, scalable, and maintainable system. The system should be reusable for many different clients and use cases with only a configuration change (yaml), but not code changes (python).
 
