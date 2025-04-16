@@ -86,5 +86,9 @@ class HypnoBot:
         Returns:
             Formatted task description
         """
-        template = Template(task_description)
-        return template.safe_substitute(inputs) 
+        # Use string formatting instead of Template.safe_substitute
+        for key, value in inputs.items():
+            placeholder = "{" + key + "}"
+            task_description = task_description.replace(placeholder, str(value))
+        
+        return task_description 

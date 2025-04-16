@@ -77,6 +77,29 @@ The API documentation is available at `/docs` (e.g., http://127.0.0.1:8000/docs)
 
 - **GET /api/health** - Check if the API is running
 
+## Testing
+
+The project includes comprehensive unit and integration tests. To run the tests:
+
+```bash
+# Run all tests
+python run_tests.py
+
+# Run with verbose output
+python run_tests.py -v
+
+# Run only unit tests
+python run_tests.py --unit
+
+# Run only integration tests
+python run_tests.py --integration
+
+# Run tests with coverage report
+python run_tests.py --coverage
+```
+
+The coverage report will be generated in HTML format in the `htmlcov` directory.
+
 ## Configuration
 
 The bot is configured using YAML files:
