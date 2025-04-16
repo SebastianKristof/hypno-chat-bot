@@ -1,230 +1,114 @@
+"""
+HypnoBot - A hypnotherapy chatbot powered by CrewAI agents.
+"""
+
 import os
 import sys
-import traceback
-from crewai import Crew, Process, Agent
-from string import Template
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Optional, Any, List
+import logging
+import re
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("hypnobot.v2")
+
+# Import CrewAI components
+from crewai import Crew, Agent, Task, Process
+from crewai.agent import Agent as CrewAgent
 from langchain_openai import ChatOpenAI
+from langchain.schema import HumanMessage, SystemMessage
 
-# Add debugging output
-print("Loading HypnoBot module...")
-print(f"Python version: {sys.version}")
-print(f"Import paths: {sys.path}")
-
-# Add the parent directory to path if needed
-current_dir = Path(__file__).resolve().parent
-parent_dir = current_dir.parent
-if str(parent_dir) not in sys.path:
-    print(f"Adding {parent_dir} to sys.path")
-    sys.path.append(str(parent_dir))
-
-try:
-    # Import the agents and tasks from the config
-    from config.agents import (
-        categorizer, support_agent,
-        safety_officer, writing_coach, accessibility_agent
-    )
-    from config.tasks import (
-        categorization_task, initial_response_task,
-        safety_check_task, writing_improvement_task,
-        accessibility_task
-    )
-    print("✅ Successfully imported agents and tasks")
-except ImportError as e:
-    print(f"❌ Error importing agents and tasks: {e}")
-    print(traceback.format_exc())
-    # Re-try with absolute imports
-    try:
-        print("Trying absolute imports...")
-        from src.hypnobot.config.agents import (
-            categorizer, support_agent,
-            safety_officer, writing_coach, accessibility_agent
-        )
-        from src.hypnobot.config.tasks import (
-            categorization_task, initial_response_task,
-            safety_check_task, writing_improvement_task,
-            accessibility_task
-        )
-        print("✅ Successfully imported agents and tasks using absolute imports")
-    except ImportError as e:
-        print(f"❌ Error with absolute imports: {e}")
-        print(traceback.format_exc())
-        raise RuntimeError("Could not import required modules. Check your installation and paths.")
+# Import configuration loader
+from src.hypnobot.config.loader import load_yaml
 
 class HypnoBot:
-    """
-    HypnoBot v2 - A CrewAI-based hypnotherapy chatbot.
-    Uses a sequential workflow of specialized agents to process user queries.
-    """
-    
-    def __init__(self, model_name: Optional[str] = None):
-        """
-        Initialize the HypnoBot with its crew of agents and tasks.
-        
-        Args:
-            model_name: Optional model name to use (defaults to env var or gpt-3.5-turbo)
-        """
-        # Set up the LLM
-        self.model_name = model_name or os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo")
-        
-        # Initialize the LLM with proper configuration for CrewAI compatibility
-        try:
-            print(f"Initializing LLM with model: {self.model_name}")
-            self.llm = ChatOpenAI(model=self.model_name)
-            
-            # Assign the LLM to all agents
-            for agent in [categorizer, support_agent, safety_officer, writing_coach, accessibility_agent]:
-                agent.llm = self.llm
-                
-            # Initialize the categorization task
-            self.categorization_task = categorization_task
-            self.categorization_task.agent = categorizer
-            
-            # Initialize the full crew for appropriate queries
-            print("Initializing CrewAI crew...")
-            self.crew = Crew(
-                agents=[
-                    categorizer,
-                    support_agent,
-                    safety_officer,
-                    writing_coach,
-                    accessibility_agent
-                ],
-                tasks=[
-                    categorization_task,
-                    initial_response_task,
-                    safety_check_task,
-                    writing_improvement_task,
-                    accessibility_task
-                ],
-                process=Process.sequential,
-                verbose=True
+    def __init__(self, config_dir: str = "src/hypnobot/config"):
+        self.config_dir = Path(config_dir)
+        self.agents = self._load_agents()
+        self.tasks = self._load_tasks()
+        self.crew = self._build_crew()
+
+        # Assign categorization agent and task explicitly for pre-check
+        self.categorizer = self.agents.get("categorizer")
+        self.categorization_task = self.tasks.get("categorization_task")
+        if self.categorization_task and self.categorizer:
+            self.categorization_task.agent = self.categorizer
+
+    def _load_agents(self) -> Dict[str, Agent]:
+        logger.info("Loading agents...")
+        agents_data = load_yaml(self.config_dir / "agents.yaml")
+        agents = {}
+        for name, config in agents_data.items():
+            tools = config.get("tools", [])
+            agents[name] = Agent(
+                role=config["role"],
+                goal=config["goal"],
+                backstory=config["backstory"],
+                verbose=config.get("verbose", False),
+                memory=config.get("memory", False),
+                tools=[],  # You can inject tools later if needed
             )
-            print("✅ HypnoBot initialization complete")
-        except AttributeError as e:
-            # Catch specific compatibility issues with langchain_openai
-            if "'ChatOpenAI' object has no attribute 'supports_stop_words'" in str(e):
-                raise RuntimeError(
-                    "Compatibility issue detected with langchain_openai. "
-                    "Please ensure you have compatible versions of crewai and langchain_openai installed. "
-                    "Try: pip install crewai==0.28.8 langchain-openai==0.0.2"
-                ) from e
-            raise
-        except Exception as e:
-            print(f"❌ Error during HypnoBot initialization: {e}")
-            print(traceback.format_exc())
-            raise
-    
+        return agents
+
+    def _load_tasks(self) -> Dict[str, Task]:
+        logger.info("Loading tasks...")
+        tasks_data = load_yaml(self.config_dir / "tasks.yaml")
+        tasks = {}
+        for name, config in tasks_data.items():
+            tasks[name] = Task(
+                description=config["description"],
+                expected_output=config["expected_output"],
+                agent=None  # Linked later in crew definition or dynamically
+            )
+        return tasks
+
+    def _build_crew(self) -> Crew:
+        logger.info("Assembling Crew...")
+        # Define the process flow
+        task_list = [
+            self.tasks[name] for name in [
+                "initial_response_task",
+                "safety_check_task",
+                "writing_improvement_task",
+                "accessibility_task"
+            ]
+        ]
+        # Dynamically assign agents to tasks if not already assigned
+        for task in task_list:
+            if not task.agent:
+                # This assumes task name matches agent prefix (convention)
+                agent_key = task.name.replace("_task", "")
+                task.agent = self.agents.get(agent_key)
+
+        return Crew(
+            agents=list(self.agents.values()),
+            tasks=task_list,
+            process=Process.sequential
+        )
+
     def process_input(self, user_input: str) -> str:
-        """
-        Process a user input through the agent workflow.
-        
-        Args:
-            user_input: The user's question or message
-            
-        Returns:
-            The final response after processing through all agents
-        """
         try:
-            # Truncate input if it's too long (1500 character limit)
-            MAX_CHARS = 1500
-            original_length = len(user_input)
-            if original_length > MAX_CHARS:
-                user_input = user_input[:MAX_CHARS] + "..."
-            
-            # STEP 1: Categorize the inquiry - we still do this separately to check appropriateness
-            print(f"Running categorization for input: {user_input[:30]}...")
-            try:
-                # Try the direct task execution for categorization
-                categorization_result = self.categorization_task.execute({"user_input": user_input})
-            except TypeError as e:
-                print(f"❌ TypeError in categorization task: {e}")
-                # Try older API signature
-                categorization_result = self.categorization_task.execute(inputs={"user_input": user_input})
-            
-            # Parse the categorization result
-            is_appropriate, category, explanation = self._parse_categorization(categorization_result)
-            
-            # STEP 2: If inappropriate, return a polite rejection
-            if not is_appropriate:
-                print(f"Input categorized as inappropriate: {category}")
-                return f"I'm sorry, but I can't assist with this request.\n\nCategory: {category}\nReason: {explanation}"
-            
-            # STEP 3: For appropriate queries, run the full workflow using CrewAI's kickoff method
-            print("Input is appropriate, running full agent workflow...")
-            
-            # We're following the standard CrewAI design pattern here
-            try:
-                print("Starting crew workflow...")
-                
-                # Use a simple dict with user_input - CrewAI will handle the rest through dependencies
-                result = self.crew.kickoff({"user_input": user_input})
-                print("Crew workflow completed successfully")
-                
-            except Exception as e:
-                # If any error occurs, provide detailed info
-                print(f"❌ Error in crew workflow: {e}")
-                print(traceback.format_exc())
-                return f"I'm sorry, I encountered an error while processing your request: {str(e)}"
-            
-            # Add note about truncation if input was truncated
-            if original_length > MAX_CHARS:
-                result += f"\n\n(Note: Your message was truncated from {original_length} to {MAX_CHARS} characters for processing.)"
-            
-            print("Processing complete.")
-            return result
+            logger.info(f"Running categorization for input: {user_input}...")
+            if not self.categorization_task or not self.categorizer:
+                logger.warning("Categorizer not configured — skipping pre-check")
+            else:
+                result = self.categorization_task.execute(inputs={"user_input": user_input})
+                label = result.strip().splitlines()[0].upper()
+                logger.info(f"Categorization result: {label}")
+
+                if label != "APPROPRIATE":
+                    return (
+                        f"⚠️ Sorry, we cannot proceed with this inquiry.\n"
+                        f"Category: {label}\n\n"
+                        f"{result}"
+                    )
+
+            logger.info("Executing full crew pipeline...")
+            final_output = self.crew.kickoff(inputs={"user_input": user_input})
+            return final_output
+
         except Exception as e:
-            print(f"❌ Error processing input: {e}")
-            print(traceback.format_exc())
-            return f"I'm sorry, I encountered an error while processing your request: {str(e)}"
-    
-    def _execute_task(self, task, inputs):
-        """Helper method to execute a task with proper error handling for API differences"""
-        try:
-            # Try context parameter first (newer API)
-            return task.execute(context=inputs)
-        except TypeError:
-            try:
-                # Try inputs parameter (older API)
-                return task.execute(inputs=inputs)
-            except TypeError:
-                # Try with positional argument
-                return task.execute(inputs)
-    
-    def _parse_categorization(self, result: str) -> Tuple[bool, str, str]:
-        """
-        Parse the categorization result to determine if the query is appropriate.
-        
-        Args:
-            result: The categorization result string
-            
-        Returns:
-            Tuple of (is_appropriate, category, explanation)
-        """
-        lines = result.strip().split("\n")
-        category = lines[0].upper() if lines else ""
-        explanation = "\n".join(lines[1:]) if len(lines) > 1 else ""
-        
-        # Check if the query is appropriate for hypnotherapy discussion
-        is_appropriate = "APPROPRIATE" in category
-        
-        return is_appropriate, category, explanation
-    
-    def format_task_template(self, task_description: str, inputs: Dict[str, Any]) -> str:
-        """
-        Format a task description template with the given inputs.
-        
-        Args:
-            task_description: The task description with placeholders
-            inputs: Dictionary of input values
-            
-        Returns:
-            Formatted task description
-        """
-        # Use string formatting instead of Template.safe_substitute
-        for key, value in inputs.items():
-            placeholder = "{" + key + "}"
-            task_description = task_description.replace(placeholder, str(value))
-        
-        return task_description 
+            logger.exception("❌ Error processing input")
+            return f"⚠️ Something went wrong while processing your message: {str(e)}"

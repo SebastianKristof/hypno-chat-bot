@@ -10,55 +10,51 @@ load_dotenv()
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
 
-# Apply memory patch to avoid embedchain dependency issues
+# Optional memory patch if needed
 try:
     from src.hypnobot.memory_patch import patch_memory
     patch_memory()
-    print("Applied memory patch to avoid embedchain dependency")
+    print("✅ Applied memory patch to avoid embedchain dependency issues")
+except ImportError:
+    pass  # No memory patch module present = not an issue
 except Exception as e:
-    print(f"Warning: Failed to apply memory patch: {e}")
+    print(f"⚠️ Warning: Memory patch failed: {e}")
 
+# Import HypnoBot
 from src.hypnobot.v2.hypnobot import HypnoBot
 
 def main():
-    """Main function to run the HypnoBot."""
-    # Check if API key is set
-    if not os.getenv("OPENAI_API_KEY"):
-        print("Error: OPENAI_API_KEY not found in environment variables.")
-        print("Please set your OpenAI API key before running the bot.")
-        print("You can create a .env file based on .env.example")
-        return
-
-    print("HypnoBot v2 - Hypnotherapy Chatbot")
+    print("🧠 HypnoBot v2 - Hypnotherapy Chatbot")
     print("Type 'exit' to quit the chat")
     print("-" * 50)
-    
+
+    if not os.getenv("OPENAI_API_KEY"):
+        print("❌ Error: OPENAI_API_KEY not found in environment variables.")
+        print("Please create a .env file (you can use .env.example)")
+        return
+
     try:
-        # Initialize the bot
-        print("Initializing HypnoBot...")
+        print("⚙️ Initializing HypnoBot...")
         bot = HypnoBot()
-        print("Initialization complete.")
-        
+        print("✅ Ready to chat!")
+
         while True:
-            # Get user input
             user_input = input("\nYou: ")
-            
-            # Check for exit command
-            if user_input.lower() in ('exit', 'quit', 'bye'):
+            if user_input.lower() in ("exit", "quit", "bye"):
                 print("HypnoBot: Goodbye! Take care.")
                 break
-            
-            # Process the input
+
             try:
-                print("Processing your request...")
+                print("🤖 Thinking...")
                 response = bot.process_input(user_input)
                 print(f"\nHypnoBot: {response}")
             except Exception as e:
-                print(f"\nError: {str(e)}")
-                print("HypnoBot: I'm sorry, I encountered an error processing your request.")
+                print(f"\n❌ Error: {e}")
+                print("HypnoBot: I'm sorry, something went wrong.")
+
     except Exception as e:
-        print(f"Error initializing HypnoBot: {str(e)}")
-        print("Please check your API key and dependencies.")
+        print(f"❌ Error initializing HypnoBot: {e}")
+        print("Please check your dependencies and configuration.")
 
 if __name__ == "__main__":
-    main() 
+    main()

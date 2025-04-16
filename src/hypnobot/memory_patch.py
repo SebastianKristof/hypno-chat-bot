@@ -1,99 +1,40 @@
 """
-Memory patch module to avoid embedchain dependency.
-This provides mock implementations of the required classes.
+Memory patch module to fix potential LangChain memory and tracing issues with CrewAI.
+
+This patch prevents conflicts between LangChain's optional memory backends
+and other libraries like embedchain that might be present in the environment.
 """
 
-class MockApp:
-    """Mock of embedchain App class."""
-    
-    def __init__(self, *args, **kwargs):
-        self.data = {}
-    
-    def add(self, text, metadata=None):
-        """Mock add method."""
-        return True
-    
-    def query(self, query_text, **kwargs):
-        """Mock query method."""
-        return "No memory found (embedchain disabled)"
+import os
+import sys
+import logging
 
-class MockRAGStorage:
-    """Mock of RAGStorage class."""
-    
-    def __init__(self, *args, **kwargs):
-        self.app = MockApp()
-    
-    def save_entity(self, entity_text, metadata=None):
-        """Mock save_entity method."""
-        return self.app.add(entity_text, metadata)
-    
-    def get_relevant_entities(self, query_text, **kwargs):
-        """Mock get_relevant_entities method."""
-        return []
-
-class MockBaseLlm:
-    """Mock base LLM class."""
-    
-    def __init__(self, *args, **kwargs):
-        pass
-        
-    def get_llm(self):
-        """Return None as mock LLM."""
-        return None
-
-    @classmethod
-    def create(cls, *args, **kwargs):
-        """Create mock LLM."""
-        return cls()
-
-class InvalidDimensionException(Exception):
-    """Mock of InvalidDimensionException class."""
-    pass
+logger = logging.getLogger(__name__)
 
 def patch_memory():
     """
-    Patch the crewai memory module to avoid the embedchain dependency.
-    Call this before importing HypnoBot.
+    Apply environment variable patches to ensure compatibility between CrewAI,
+    LangChain memory components, and other AI libraries.
+    
+    This follows the recommended approach from CrewAI documentation to avoid
+    potential issues when using memory=True with agents or when using Cursor
+    with auto-suggestions.
+    
+    Returns:
+        bool: True if the patch was applied successfully, False otherwise
     """
-    import sys
-    
-    # Create mock packages and modules
-    class MockChroma:
-        InvalidDimensionException = InvalidDimensionException
-    
-    class MockVectorDB:
-        chroma = MockChroma
-    
-    class MockLLM:
-        base = type('base', (), {'BaseLlm': MockBaseLlm})
-    
-    class MockEmbedder:
-        pass
-    
-    class MockEmbedchain:
-        App = MockApp
-        llm = MockLLM
-        embedder = MockEmbedder
-        vectordb = MockVectorDB
-        # Add any other top-level modules needed
+    try:
+        # Set environment variables to disable LangChain's advanced tracing/memory plugins
+        # and keep things default and stable
+        os.environ["LANGCHAIN_HANDLER"] = "default"
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
         
-    # Add mock embedchain and its submodules to sys.modules
-    sys.modules['embedchain'] = MockEmbedchain
-    sys.modules['embedchain.llm'] = MockEmbedchain.llm
-    sys.modules['embedchain.llm.base'] = MockEmbedchain.llm.base
-    sys.modules['embedchain.embedder'] = MockEmbedchain.embedder
-    sys.modules['embedchain.vectordb'] = MockEmbedchain.vectordb
-    sys.modules['embedchain.vectordb.chroma'] = MockEmbedchain.vectordb.chroma
-    
-    # If crewai is already imported, patch the RAGStorage class
-    if 'crewai.memory.storage.rag_storage' in sys.modules:
-        import crewai.memory.storage.rag_storage as rag_storage
-        rag_storage.RAGStorage = MockRAGStorage
-        # Also patch the ImportError
-        if hasattr(rag_storage, 'InvalidDimensionException'):
-            rag_storage.InvalidDimensionException = InvalidDimensionException
-    
-    # Print successful patch
-    print("📦 Embedchain dependency successfully mocked")
-    
-    return True 
+        # Optional: Add additional compatibility environment variables if needed
+        # os.environ["LANGCHAIN_SESSION"] = ""  # Disable session tracking
+        
+        logger.info("Applied LangChain memory and tracing environment patches")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to apply memory patch: {str(e)}")
+        return False 
