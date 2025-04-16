@@ -1,0 +1,8 @@
+---
+description: project planning and implementation steps, backlog
+globs: 
+alwaysApply: false
+---
+Backlog
+- add RAG and personalized information about myself and my methods
+- add suggested follow-up questions (potentially new agent?)

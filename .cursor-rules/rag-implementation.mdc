@@ -1,0 +1,89 @@
+---
+description: RAG (Retrieval-Augmented Generation) setup to your CrewAI crew using your local documents (Markdown, TXT, etc.)
+globs: 
+alwaysApply: false
+---
+
+
+
+ChatGPT said:
+Great question — let’s walk through how to add a simple, text-based RAG (Retrieval-Augmented Generation) setup to your CrewAI crew using your local documents (Markdown, TXT, etc.).
+
+This gives your agents specific, grounded knowledge about your hypnotherapy practice, rather than relying only on general model knowledge.
+
+🎯 Goal
+Integrate a RAG tool that:
+
+Reads from local .txt or .md files
+
+Responds to user queries using your custom knowledge base
+
+Can be added to any agent via tools=[...]
+
+✅ Step-by-Step Setup
+🗂️ 1. Prepare a Knowledge Base
+Create a docs/ folder:
+
+bash
+Copy
+Edit
+src/hypnobot/docs/
+├── intro.txt
+├── faq.md
+├── client_prep.txt
+Each file contains real-world material your chatbot should use.
+
+🧠 2. Build a Simple RAG Tool
+python
+Copy
+Edit
+# src/hypnobot/tools/methodology_rag_tool.py
+
+from crewai_tools import tool
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.document_loaders import DirectoryLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.qa_with_sources import load_qa_with_sources_chain
+from langchain.llms import OpenAI
+
+@tool("HypnotherapyMethodologyTool")
+def hypnotherapy_methodology_tool(query: str) -> str:
+    """Answers questions using internal hypnotherapy methodology documents."""
+    
+    # Load local docs from your knowledge base
+    loader = DirectoryLoader('src/hypnobot/docs', glob='**/*.txt')
+    documents = loader.load()
+
+    # Split into chunks for embedding
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    chunks = splitter.split_documents(documents)
+
+    # Create vector index
+    embeddings = OpenAIEmbeddings()
+    vectorstore = FAISS.from_documents(chunks, embeddings)
+
+    # Query using retriever + LLM
+    retriever = vectorstore.as_retriever()
+    relevant_docs = retriever.get_relevant_documents(query)
+
+    llm = OpenAI(temperature=0)
+    chain = load_qa_with_sources_chain(llm, chain_type="stuff")
+
+    result = chain.run(input_documents=relevant_docs, question=query)
+    return result
+🔌 3. Add the Tool to Your Agent
+In crew.py:
+
+python
+Copy
+Edit
+from src.hypnobot.tools.methodology_rag_tool import hypnotherapy_methodology_tool
+
+support_agent = Agent(
+  role='Support Assistant',
+  goal='Answer hypnotherapy questions using internal methods',
+  backstory='You have deep knowledge of the practice...',
+  tools=[hypnotherapy_methodology_tool],
+  memory=True
+)
