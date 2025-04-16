@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  hypnobot-cli:
+    build: .
+    env_file:
+      - .env
+    stdin_open: true  # Keep stdin open
+    tty: true         # Allocate a pseudo-TTY
+    command: python run_cli.py --verbose
+
+  hypnobot-api:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    command: python run_api.py --host 0.0.0.0 --port 8000 

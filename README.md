@@ -19,6 +19,20 @@ HypnoBot v2 uses a multi-agent workflow with the following agents:
 
 ## Setup
 
+### Automated Setup (Recommended)
+
+Run the setup script to create a virtual environment and install compatible dependencies:
+
+```bash
+# Unix/macOS
+./setup_env.sh
+
+# Activate the virtual environment
+source venv/bin/activate
+```
+
+### Manual Setup
+
 1. Clone the repository
 2. Create a virtual environment:
    ```
@@ -29,6 +43,12 @@ HypnoBot v2 uses a multi-agent workflow with the following agents:
    ```
    pip install -r requirements.txt
    ```
+   
+   If you encounter dependency conflicts, use the compatible versions:
+   ```
+   pip install -r requirements-compatible.txt
+   ```
+
 4. Set up your OpenAI API key:
    ```
    export OPENAI_API_KEY=your_api_key_here  # On Windows: set OPENAI_API_KEY=your_api_key_here
@@ -39,8 +59,27 @@ HypnoBot v2 uses a multi-agent workflow with the following agents:
 
 ### CLI Mode
 
-```
+You can run the bot in CLI mode using one of the following methods:
+
+```bash
+# Using the main module 
 python -m src.hypnobot.main
+```
+
+or using the dedicated CLI script with more options:
+
+```bash
+# Interactive mode
+./run_cli.py
+
+# With a specific model
+./run_cli.py --model gpt-4
+
+# Process a single message and exit
+./run_cli.py --single "What is hypnotherapy?"
+
+# Verbose mode with more information
+./run_cli.py -v
 ```
 
 ### API Mode
@@ -77,6 +116,42 @@ The API documentation is available at `/docs` (e.g., http://127.0.0.1:8000/docs)
 
 - **GET /api/health** - Check if the API is running
 
+## Docker Support
+
+For dependency isolation and easier deployment, HypnoBot can be run using Docker.
+
+### Prerequisites
+- Docker and Docker Compose installed
+
+### Setup
+
+1. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+2. Build and run using Docker Compose:
+
+   ```bash
+   # Run the API server
+   docker-compose up hypnobot-api
+   
+   # Run the CLI in interactive mode
+   docker-compose up hypnobot-cli
+   ```
+
+3. For custom commands with the CLI version:
+
+   ```bash
+   # Single message mode
+   docker-compose run hypnobot-cli python run_cli.py --single "What is hypnotherapy?"
+   
+   # Different model
+   docker-compose run hypnobot-cli python run_cli.py --model gpt-4
+   ```
+
+The Docker setup uses compatible versions of CrewAI and LangChain packages to avoid dependency conflicts.
+
 ## Testing
 
 The project includes comprehensive unit and integration tests. To run the tests:
@@ -106,6 +181,14 @@ The bot is configured using YAML files:
 
 - `src/hypnobot/config/agents.yaml` - Agent definitions
 - `src/hypnobot/config/tasks.yaml` - Task definitions
+
+## Troubleshooting
+
+If you encounter dependency conflicts between CrewAI and LangChain packages:
+
+1. Use the compatible versions specified in `requirements-compatible.txt`
+2. Or use the Docker setup which isolates dependencies
+3. For development, the setup script (`setup_env.sh`) will create a clean environment with compatible packages
 
 ## Future Enhancements
 

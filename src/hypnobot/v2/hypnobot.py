@@ -33,31 +33,43 @@ class HypnoBot:
         """
         # Set up the LLM
         self.model_name = model_name or os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo")
-        self.llm = ChatOpenAI(model=self.model_name)
         
-        # Assign the LLM to all agents
-        for agent in [categorizer, support_agent, safety_officer, writing_coach, accessibility_agent]:
-            agent.llm = self.llm
-        
-        # Initialize the crew
-        self.crew = Crew(
-            agents=[
-                categorizer,
-                support_agent,
-                safety_officer,
-                writing_coach,
-                accessibility_agent
-            ],
-            tasks=[
-                categorization_task,
-                initial_response_task,
-                safety_check_task,
-                writing_improvement_task,
-                accessibility_task
-            ],
-            process=Process.sequential,
-            verbose=True
-        )
+        # Initialize the LLM with proper configuration for CrewAI compatibility
+        try:
+            self.llm = ChatOpenAI(model=self.model_name)
+            
+            # Assign the LLM to all agents
+            for agent in [categorizer, support_agent, safety_officer, writing_coach, accessibility_agent]:
+                agent.llm = self.llm
+                
+            # Initialize the crew
+            self.crew = Crew(
+                agents=[
+                    categorizer,
+                    support_agent,
+                    safety_officer,
+                    writing_coach,
+                    accessibility_agent
+                ],
+                tasks=[
+                    categorization_task,
+                    initial_response_task,
+                    safety_check_task,
+                    writing_improvement_task,
+                    accessibility_task
+                ],
+                process=Process.sequential,
+                verbose=True
+            )
+        except AttributeError as e:
+            # Catch specific compatibility issues with langchain_openai
+            if "'ChatOpenAI' object has no attribute 'supports_stop_words'" in str(e):
+                raise RuntimeError(
+                    "Compatibility issue detected with langchain_openai. "
+                    "Please ensure you have compatible versions of crewai and langchain_openai installed. "
+                    "Try: pip install crewai==0.28.8 langchain-openai==0.0.2"
+                ) from e
+            raise
     
     def process_input(self, user_input: str) -> str:
         """
