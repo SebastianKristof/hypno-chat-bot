@@ -10,6 +10,14 @@ load_dotenv()
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
 
+# Apply memory patch to avoid embedchain dependency issues
+try:
+    from src.hypnobot.memory_patch import patch_memory
+    patch_memory()
+    print("Applied memory patch to avoid embedchain dependency")
+except Exception as e:
+    print(f"Warning: Failed to apply memory patch: {e}")
+
 from src.hypnobot.v2.hypnobot import HypnoBot
 
 def main():

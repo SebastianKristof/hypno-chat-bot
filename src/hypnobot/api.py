@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field, validator
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 import logging
+import threading
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -22,7 +24,30 @@ load_dotenv()
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
 
-from src.hypnobot.v2.hypnobot import HypnoBot
+# Apply memory patch first, before any other imports
+from src.hypnobot.memory_patch import patch_memory
+if not patch_memory():
+    logger.error("Failed to apply memory patch - API may not function correctly")
+
+# Now import HypnoBot
+try:
+    # First try to import directly
+    logger.info("Attempting to import HypnoBot...")
+    from src.hypnobot.v2 import HypnoBot
+    logger.info("Successfully imported HypnoBot via package import")
+except ImportError as e:
+    logger.warning(f"Package import failed: {e}")
+    try:
+        # Try alternative direct import
+        from src.hypnobot.v2.hypnobot import HypnoBot
+        logger.info("Successfully imported HypnoBot via direct module import")
+    except ImportError as e:
+        logger.error(f"Failed to import HypnoBot: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # Set HypnoBot to None so we can continue loading the API
+        HypnoBot = None
+        logger.error("API will start but bot functionality will be unavailable")
 
 # Define request and response models
 class HypnoBotRequest(BaseModel):
@@ -39,29 +64,55 @@ class HypnoBotResponse(BaseModel):
 
 # Initialize the HypnoBot
 bot = None
+initialization_error = None
+initialization_lock = threading.Lock()
+is_initializing = False
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan context manager for the FastAPI app."""
-    # Initialize the bot on startup
-    global bot
+def init_bot():
+    """Initialize the HypnoBot outside of the lifespan context."""
+    global bot, initialization_error, is_initializing, HypnoBot
+    
+    # Check if already initialized or initializing
+    with initialization_lock:
+        if bot is not None or is_initializing:
+            return
+        is_initializing = True
+    
     try:
         # Check if API key is set
         if not os.getenv("OPENAI_API_KEY"):
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         
+        # Check if HypnoBot class was imported successfully
+        if HypnoBot is None:
+            raise ImportError("HypnoBot class not found. Please check import paths and dependencies.")
+        
         logger.info("Initializing HypnoBot...")
         bot = HypnoBot()
         logger.info("HypnoBot initialization complete.")
-        
-        yield  # This will run until the app shuts down
-    
     except Exception as e:
-        logger.error(f"Error initializing HypnoBot: {str(e)}")
-        yield
-    
+        initialization_error = str(e)
+        logger.error(f"Error initializing HypnoBot: {initialization_error}")
+        logger.error(traceback.format_exc())
     finally:
-        # Cleanup on shutdown if needed
+        with initialization_lock:
+            is_initializing = False
+
+# Start initialization in the background if HypnoBot is available
+if HypnoBot is not None:
+    threading.Thread(target=init_bot, daemon=True).start()
+else:
+    initialization_error = "HypnoBot class could not be imported"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for the FastAPI app."""
+    # Yield control back to FastAPI
+    yield
+    
+    # Cleanup on shutdown
+    global bot
+    if bot is not None:
         logger.info("Shutting down HypnoBot...")
         bot = None
         logger.info("HypnoBot shutdown complete.")
@@ -102,8 +153,23 @@ async def get_index():
 @app.post("/api/chat", response_model=HypnoBotResponse)
 async def chat(request: HypnoBotRequest):
     """Process a chat message through the HypnoBot."""
-    if not bot:
-        raise HTTPException(status_code=503, detail="Bot not initialized. Please try again later.")
+    # Check for initialization error
+    if initialization_error:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"HypnoBot initialization failed: {initialization_error}"
+        )
+    
+    # Check if bot is ready
+    if bot is None:
+        # If not initializing yet, start initialization
+        if not is_initializing and HypnoBot is not None:
+            threading.Thread(target=init_bot, daemon=True).start()
+        
+        raise HTTPException(
+            status_code=503, 
+            detail="HypnoBot is still initializing. Please try again in a moment."
+        )
     
     try:
         # Log input length and truncate if necessary
@@ -121,12 +187,34 @@ async def chat(request: HypnoBotRequest):
         return HypnoBotResponse(response=response)
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    status = "healthy" if bot is not None else "initializing"
-    return {"status": status}
+    import_status = "imported" if HypnoBot is not None else "import_failed"
+    
+    if initialization_error:
+        return {
+            "status": "error",
+            "error": initialization_error,
+            "import_status": import_status,
+            "api_running": True
+        }
+    elif bot is None:
+        return {
+            "status": "initializing" if HypnoBot is not None else "failed",
+            "message": "HypnoBot is starting up. Please wait." if HypnoBot is not None else "HypnoBot could not be loaded",
+            "import_status": import_status,
+            "api_running": True
+        }
+    else:
+        return {
+            "status": "healthy",
+            "ready": True,
+            "import_status": import_status,
+            "api_running": True
+        }
 
 # To run this app: uvicorn src.hypnobot.api:app --reload 

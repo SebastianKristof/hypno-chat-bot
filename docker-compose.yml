@@ -2,17 +2,35 @@ version: '3'
 
 services:
   hypnobot-cli:
-    build: .
+    build: 
+      context: .
+      args:
+        APPROACH: 2  # Use memory_patch approach (default)
     env_file:
       - .env
     stdin_open: true  # Keep stdin open
     tty: true         # Allocate a pseudo-TTY
-    command: python run_cli.py --verbose
+    entrypoint: ["python", "run_cli.py"]
 
   hypnobot-api:
-    build: .
+    build:
+      context: .
+      args:
+        APPROACH: 2  # Use memory_patch approach (default)
     env_file:
       - .env
     ports:
       - "8000:8000"
-    command: python run_api.py --host 0.0.0.0 --port 8000 
+    command: ["uvicorn", "src.hypnobot.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    
+  # Alternative API service with full embedchain support
+  hypnobot-api-full:
+    build:
+      context: .
+      args:
+        APPROACH: 1  # Use full embedchain
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"  # Run on different port
+    command: ["uvicorn", "src.hypnobot.api:app", "--host", "0.0.0.0", "--port", "8000"] 
