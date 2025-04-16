@@ -67,20 +67,13 @@ class HypnoBot:
     def _build_crew(self) -> Crew:
         logger.info("Assembling Crew...")
         # Define the process flow
-        task_list = [
-            self.tasks[name] for name in [
-                "initial_response_task",
-                "safety_check_task",
-                "writing_improvement_task",
-                "accessibility_task"
-            ]
-        ]
-        # Dynamically assign agents to tasks if not already assigned
-        for task in task_list:
+        task_list = []
+        for task_name in ["initial_response_task", "safety_check_task", "writing_improvement_task", "accessibility_task"]:
+            task = self.tasks[task_name]
+            agent_key = task_name.replace("_task", "")
             if not task.agent:
-                # This assumes task name matches agent prefix (convention)
-                agent_key = task.name.replace("_task", "")
                 task.agent = self.agents.get(agent_key)
+            task_list.append(task)
 
         return Crew(
             agents=list(self.agents.values()),
@@ -94,7 +87,7 @@ class HypnoBot:
             if not self.categorization_task or not self.categorizer:
                 logger.warning("Categorizer not configured — skipping pre-check")
             else:
-                result = self.categorization_task.execute(inputs={"user_input": user_input})
+                result = self.categorization_task.execute({"user_input": user_input})
                 label = result.strip().splitlines()[0].upper()
                 logger.info(f"Categorization result: {label}")
 

@@ -29,25 +29,13 @@ from src.hypnobot.memory_patch import patch_memory
 if not patch_memory():
     logger.error("Failed to apply memory patch - API may not function correctly")
 
-# Now import HypnoBot
+# Import the HypnoBot if available
 try:
-    # First try to import directly
-    logger.info("Attempting to import HypnoBot...")
-    from src.hypnobot.v2 import HypnoBot
-    logger.info("Successfully imported HypnoBot via package import")
+    from src.hypnobot.hypnobot import HypnoBot
+    print(f"✅ Successfully imported HypnoBot")
 except ImportError as e:
-    logger.warning(f"Package import failed: {e}")
-    try:
-        # Try alternative direct import
-        from src.hypnobot.v2.hypnobot import HypnoBot
-        logger.info("Successfully imported HypnoBot via direct module import")
-    except ImportError as e:
-        logger.error(f"Failed to import HypnoBot: {str(e)}")
-        logger.error(traceback.format_exc())
-        
-        # Set HypnoBot to None so we can continue loading the API
-        HypnoBot = None
-        logger.error("API will start but bot functionality will be unavailable")
+    print(f"❌ Error importing HypnoBot: {e}")
+    HypnoBot = None  # Will be checked later
 
 # Define request and response models
 class HypnoBotRequest(BaseModel):

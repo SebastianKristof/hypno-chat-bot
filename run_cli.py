@@ -7,6 +7,7 @@ import sys
 import argparse
 from pathlib import Path
 from dotenv import load_dotenv
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -15,7 +16,13 @@ load_dotenv()
 project_root = Path(__file__).resolve().parent
 sys.path.append(str(project_root))
 
-from src.hypnobot.v2.hypnobot import HypnoBot
+try:
+    from src.hypnobot.hypnobot import HypnoBot
+    print("Successfully imported HypnoBot")
+except ImportError as e:
+    print(f"Error importing HypnoBot: {str(e)}")
+    print(traceback.format_exc())
+    sys.exit(1)
 
 def main():
     """Main function to run the HypnoBot CLI."""
@@ -52,7 +59,6 @@ def main():
             except Exception as e:
                 print(f"\nError processing input: {str(e)}")
                 if args.debug:
-                    import traceback
                     traceback.print_exc()
                 return 1
         
@@ -77,7 +83,6 @@ def main():
             except Exception as e:
                 print(f"\nError: {str(e)}")
                 if args.debug:
-                    import traceback
                     traceback.print_exc()
                 print("HypnoBot: I'm sorry, I encountered an error processing your request.")
         
@@ -86,7 +91,6 @@ def main():
     except Exception as e:
         print(f"Error initializing bot: {str(e)}")
         if args.debug:
-            import traceback
             traceback.print_exc()
         
         # Provide specific guidance based on the error

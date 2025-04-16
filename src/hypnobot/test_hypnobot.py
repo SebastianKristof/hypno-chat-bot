@@ -27,7 +27,7 @@ def main():
     # Import the HypnoBot class
     print("\n2. Importing HypnoBot...")
     try:
-        from src.hypnobot.v2.hypnobot import HypnoBot
+        from src.hypnobot.hypnobot import HypnoBot
         print("✅ Successfully imported HypnoBot")
     except Exception as e:
         print(f"❌ Error importing HypnoBot: {e}")

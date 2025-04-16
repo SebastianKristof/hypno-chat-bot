@@ -3,17 +3,17 @@ import sys
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+import unittest
+from src.hypnobot.hypnobot import HypnoBot
 
 # Add the project root to the system path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
 
-from src.hypnobot.v2.hypnobot import HypnoBot
-
 class TestHypnoBot:
     """Tests for the HypnoBot class."""
     
-    @patch('src.hypnobot.v2.hypnobot.ChatOpenAI')
+    @patch('src.hypnobot.hypnobot.ChatOpenAI')
     def test_init(self, mock_chat_openai):
         """Test the initialization of the HypnoBot class."""
         # Mock the ChatOpenAI class
@@ -27,8 +27,8 @@ class TestHypnoBot:
         assert mock_chat_openai.called
         assert bot.crew is not None
     
-    @patch('src.hypnobot.v2.hypnobot.ChatOpenAI')
-    @patch('src.hypnobot.v2.hypnobot.Crew')
+    @patch('src.hypnobot.hypnobot.ChatOpenAI')
+    @patch('src.hypnobot.hypnobot.Crew')
     def test_process_input(self, mock_crew, mock_chat_openai):
         """Test the process_input method."""
         # Mock the ChatOpenAI class
@@ -49,7 +49,7 @@ class TestHypnoBot:
         assert response == "Test response"
         mock_crew_instance.kickoff.assert_called_once_with(inputs={'user_input': 'Test input'})
     
-    @patch('src.hypnobot.v2.hypnobot.ChatOpenAI')
+    @patch('src.hypnobot.hypnobot.ChatOpenAI')
     def test_format_task_template(self, mock_chat_openai):
         """Test the format_task_template method."""
         # Mock the ChatOpenAI class
