@@ -461,12 +461,56 @@ class HypnoBot1Crew:
             inquiry_model = self.agents_config.get("hypnotherapy_guide", {}).get("llm", {}).get("model", "gpt-4o-mini")
             review_model = self.agents_config.get("safety_specialist", {}).get("llm", {}).get("model", "gpt-4o-mini")
             
-            # Calculate cost info
-            cost_info = calculate_cost(token_usage, inquiry_model)
-            cost_info['models'] = {
-                'inquiry': inquiry_model,
-                'review': review_model
+            # Calculate cost info with a more detailed breakdown
+            # Estimate token distribution between models (roughly 60% for inquiry, 40% for review)
+            inquiry_token_distribution = {
+                "prompt_tokens": int(token_usage.get("prompt_tokens", 0) * 0.6),
+                "completion_tokens": int(token_usage.get("completion_tokens", 0) * 0.6),
+                "total_tokens": int(token_usage.get("total_tokens", 0) * 0.6)
             }
+            
+            review_token_distribution = {
+                "prompt_tokens": token_usage.get("prompt_tokens", 0) - inquiry_token_distribution["prompt_tokens"],
+                "completion_tokens": token_usage.get("completion_tokens", 0) - inquiry_token_distribution["completion_tokens"],
+                "total_tokens": token_usage.get("total_tokens", 0) - inquiry_token_distribution["total_tokens"]
+            }
+            
+            # Calculate costs for each model
+            inquiry_cost = calculate_cost(inquiry_token_distribution, inquiry_model)
+            review_cost = calculate_cost(review_token_distribution, review_model)
+            
+            # Combine costs for total
+            total_cost = inquiry_cost["total_cost"] + review_cost["total_cost"]
+            input_cost = inquiry_cost["input_cost"] + review_cost["input_cost"]
+            output_cost = inquiry_cost["output_cost"] + review_cost["output_cost"]
+            
+            # Create detailed cost info
+            cost_info = {
+                "total_cost": total_cost,
+                "input_cost": input_cost, 
+                "output_cost": output_cost,
+                "models": {
+                    'inquiry': {
+                        'name': inquiry_model,
+                        'tokens': inquiry_token_distribution,
+                        'cost': inquiry_cost
+                    },
+                    'review': {
+                        'name': review_model,
+                        'tokens': review_token_distribution,
+                        'cost': review_cost
+                    }
+                },
+                "tokens": {
+                    "prompt": token_usage.get("prompt_tokens", 0),
+                    "completion": token_usage.get("completion_tokens", 0),
+                    "total": token_usage.get("total_tokens", 0)
+                }
+            }
+            
+            logger.info(f"Estimated cost: ${total_cost:.6f} (Input: ${input_cost:.6f}, Output: ${output_cost:.6f})")
+            logger.info(f"NOTE: This is a calculated estimate and may differ from actual OpenAI billing")
+            logger.info(f"Models used: inquiry={inquiry_model}, review={review_model}")
             
             # Parse the review result from the crew output
             parsed_review = self._parse_qa_review(result)

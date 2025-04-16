@@ -83,31 +83,51 @@ def calculate_cost(token_usage: Dict[str, int], model_name: str = "gpt-4o-mini")
     Returns:
         Dictionary with cost information
     """
-    # Model pricing per 1000 tokens (as of May 2024)
+    # Model pricing per 1M tokens (as of 2025)
     model_pricing = {
-        "gpt-4o-mini": {"input": 0.15, "output": 0.6},
-        "gpt-4o": {"input": 5.0, "output": 15.0},
-        "gpt-4-turbo": {"input": 10.0, "output": 30.0},
-        "gpt-4": {"input": 30.0, "output": 60.0},
-        "gpt-3.5-turbo": {"input": 0.5, "output": 1.5},
+        # Latest models
+        "gpt-4.1": {"input": 2.00, "output": 8.00},
+        "gpt-4.1-mini": {"input": 0.40, "output": 1.60},
+        "gpt-4.1-nano": {"input": 0.10, "output": 0.40},
+        "gpt-4.5-preview": {"input": 75.00, "output": 150.00},
+        "gpt-4o": {"input": 2.50, "output": 10.00},
+        "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+        "o1": {"input": 15.00, "output": 60.00},
+        "o1-pro": {"input": 150.00, "output": 600.00},
+        "o3-mini": {"input": 1.10, "output": 4.40},
+        "o1-mini": {"input": 1.10, "output": 4.40},
+        
+        # Legacy models
+        "gpt-4-turbo": {"input": 10.00, "output": 30.00},
+        "gpt-4": {"input": 30.00, "output": 60.00},
+        "gpt-3.5-turbo": {"input": 0.50, "output": 1.50}
     }
     
     # Default to gpt-4o-mini pricing if model is not in the list
-    pricing = model_pricing.get(model_name, {"input": 0.15, "output": 0.6})
+    pricing = model_pricing.get(model_name, {"input": 0.15, "output": 0.60})
     
     # Calculate costs
     prompt_tokens = token_usage.get("prompt_tokens", 0)
     completion_tokens = token_usage.get("completion_tokens", 0)
     
-    input_cost = (prompt_tokens / 1000) * pricing["input"]
-    output_cost = (completion_tokens / 1000) * pricing["output"]
+    # Pricing is per 1M tokens, so divide by 1,000,000 (not 1,000)
+    input_cost = (prompt_tokens / 1000000) * pricing["input"]
+    output_cost = (completion_tokens / 1000000) * pricing["output"]
     total_cost = input_cost + output_cost
+    
+    logger.info(f"Cost calculation for {model_name}: {prompt_tokens} prompt tokens, {completion_tokens} completion tokens")
+    logger.info(f"Using rates: ${pricing['input']}/1M input, ${pricing['output']}/1M output")
+    logger.info(f"Calculated cost: ${input_cost:.6f} input + ${output_cost:.6f} output = ${total_cost:.6f} total")
     
     return {
         "total_cost": total_cost,
         "input_cost": input_cost,
         "output_cost": output_cost,
         "model": model_name,
+        "pricing_rates": {
+            "input_per_million": pricing["input"],
+            "output_per_million": pricing["output"]
+        },
         "tokens": {
             "prompt": prompt_tokens,
             "completion": completion_tokens,
