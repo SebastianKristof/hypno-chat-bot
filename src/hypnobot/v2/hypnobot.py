@@ -133,9 +133,15 @@ class HypnoBot:
             if original_length > MAX_CHARS:
                 user_input = user_input[:MAX_CHARS] + "..."
             
-            # STEP 1: Categorize the inquiry
+            # STEP 1: Categorize the inquiry - we still do this separately to check appropriateness
             print(f"Running categorization for input: {user_input[:30]}...")
-            categorization_result = self.categorization_task.execute(inputs={"user_input": user_input})
+            try:
+                # Try the direct task execution for categorization
+                categorization_result = self.categorization_task.execute({"user_input": user_input})
+            except TypeError as e:
+                print(f"❌ TypeError in categorization task: {e}")
+                # Try older API signature
+                categorization_result = self.categorization_task.execute(inputs={"user_input": user_input})
             
             # Parse the categorization result
             is_appropriate, category, explanation = self._parse_categorization(categorization_result)
@@ -145,9 +151,22 @@ class HypnoBot:
                 print(f"Input categorized as inappropriate: {category}")
                 return f"I'm sorry, but I can't assist with this request.\n\nCategory: {category}\nReason: {explanation}"
             
-            # STEP 3: For appropriate queries, run the full workflow
+            # STEP 3: For appropriate queries, run the full workflow using CrewAI's kickoff method
             print("Input is appropriate, running full agent workflow...")
-            result = self.crew.kickoff(inputs={'user_input': user_input})
+            
+            # We're following the standard CrewAI design pattern here
+            try:
+                print("Starting crew workflow...")
+                
+                # Use a simple dict with user_input - CrewAI will handle the rest through dependencies
+                result = self.crew.kickoff({"user_input": user_input})
+                print("Crew workflow completed successfully")
+                
+            except Exception as e:
+                # If any error occurs, provide detailed info
+                print(f"❌ Error in crew workflow: {e}")
+                print(traceback.format_exc())
+                return f"I'm sorry, I encountered an error while processing your request: {str(e)}"
             
             # Add note about truncation if input was truncated
             if original_length > MAX_CHARS:
@@ -159,6 +178,19 @@ class HypnoBot:
             print(f"❌ Error processing input: {e}")
             print(traceback.format_exc())
             return f"I'm sorry, I encountered an error while processing your request: {str(e)}"
+    
+    def _execute_task(self, task, inputs):
+        """Helper method to execute a task with proper error handling for API differences"""
+        try:
+            # Try context parameter first (newer API)
+            return task.execute(context=inputs)
+        except TypeError:
+            try:
+                # Try inputs parameter (older API)
+                return task.execute(inputs=inputs)
+            except TypeError:
+                # Try with positional argument
+                return task.execute(inputs)
     
     def _parse_categorization(self, result: str) -> Tuple[bool, str, str]:
         """

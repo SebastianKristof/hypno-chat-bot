@@ -11,11 +11,14 @@ categorization_task:
 
 initial_response_task:
   description: >
-    Generate a warm and informative response to the user’s hypnotherapy-related question.
+    Generate a warm and informative response to the user's hypnotherapy-related question.
     Use only verified methods from the practice.
 
     Inquiry:
     {user_input}
+
+    Categorization:
+    {categorization_task.output}
   expected_output: >
     A 1–4 paragraph informative response, accurate to practice methodology.
 
@@ -24,8 +27,11 @@ safety_check_task:
     Review the assistant's response to remove or correct anything that may be misleading,
     unethical, medically inappropriate, or risky.
 
-    Draft:
-    {chatbot_response}
+    Original Inquiry:
+    {user_input}
+
+    Draft Response:
+    {initial_response_task.output}
   expected_output: >
     A cleaned and ethically sound response.
 
@@ -33,8 +39,11 @@ writing_improvement_task:
   description: >
     Refine the response for tone, empathy, and writing quality.
 
-    Response:
-    {chatbot_response}
+    Original Inquiry:
+    {user_input}
+
+    Safety-Checked Response:
+    {safety_check_task.output}
   expected_output: >
     A rewritten version that flows well and sounds professional and caring.
 
@@ -43,7 +52,10 @@ accessibility_task:
     Adjust the message to be understandable by the general public,
     at a high school reading level or below, without losing key meaning.
 
-    Message:
-    {chatbot_response}
+    Original Inquiry:
+    {user_input}
+
+    Improved Response:
+    {writing_improvement_task.output}
   expected_output: >
     A final version that is simple, kind, and easy to grasp.

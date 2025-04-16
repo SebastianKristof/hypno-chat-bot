@@ -78,13 +78,26 @@
             margin-bottom: 2rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .chat-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
         .btn-chat {
             background-color: #5c2d91;
             color: white;
             padding: 1rem 2rem;
             border-radius: 30px;
             font-size: 1.2rem;
-            margin-top: 1rem;
+        }
+        .btn-topics {
+            background-color: #8862b2;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            font-size: 1.2rem;
         }
         footer {
             text-align: center;
@@ -103,8 +116,11 @@
     <div class="container">
         <div class="chat-card">
             <h2>Try the HypnoBot Chat Interface</h2>
-            <p>Experience the power of HypnoBot directly through our interactive chat interface.</p>
-            <a href="/static/chat.html" class="btn btn-chat">Start Chatting Now</a>
+            <p>Experience the power of HypnoBot directly through our interactive chat interface or explore hypnotherapy topics.</p>
+            <div class="chat-buttons">
+                <a href="/static/chat.html" class="btn btn-chat">Start Chatting Now</a>
+                <a href="/static/topics.html" class="btn btn-topics">Explore Topics</a>
+            </div>
         </div>
         
         <div class="card">

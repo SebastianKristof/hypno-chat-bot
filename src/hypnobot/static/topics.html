@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypnoBot - Hypnotherapy Topics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f8fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        header {
+            background-color: #5c2d91;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .topic-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 4px solid #5c2d91;
+        }
+        .topic-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .topic-title {
+            color: #5c2d91;
+            font-size: 1.4rem;
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+        }
+        .topic-description {
+            color: #555;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #5c2d91;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #4a2275;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            background-color: #f0f0f0;
+            color: #666;
+        }
+        .nav-links {
+            margin-top: 0.5rem;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .nav-links a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>HypnoBot</h1>
+        <p>Explore Hypnotherapy Topics</p>
+        <div class="nav-links">
+            <a href="/static/index.html">Home</a>
+            <a href="/static/chat.html">Chat</a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="navigation">
+            <a href="/static/index.html" class="btn">Back to Home</a>
+            <a href="/static/chat.html" class="btn">Start Chatting</a>
+        </div>
+        
+        <h2>Popular Hypnotherapy Topics</h2>
+        <p>Explore these common hypnotherapy topics and learn how HypnoBot can help you with each. Click on any topic to start a conversation about it.</p>
+        
+        <div class="topics-grid">
+            <div class="topic-card">
+                <h3 class="topic-title">Stress Reduction</h3>
+                <p class="topic-description">Learn techniques to manage and reduce stress through guided hypnotic relaxation.</p>
+                <a href="/static/chat.html?topic=stress" class="btn">Discuss Stress Reduction</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Better Sleep</h3>
+                <p class="topic-description">Discover how hypnotherapy can help improve sleep quality and overcome insomnia.</p>
+                <a href="/static/chat.html?topic=sleep" class="btn">Discuss Sleep Improvement</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Self-Confidence</h3>
+                <p class="topic-description">Build self-esteem and confidence through hypnotic suggestions and positive reinforcement.</p>
+                <a href="/static/chat.html?topic=confidence" class="btn">Discuss Self-Confidence</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Anxiety Relief</h3>
+                <p class="topic-description">Explore techniques to reduce anxiety and promote a sense of calm and control.</p>
+                <a href="/static/chat.html?topic=anxiety" class="btn">Discuss Anxiety Relief</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Habit Change</h3>
+                <p class="topic-description">Learn how hypnotherapy can help break unwanted habits and establish healthier patterns.</p>
+                <a href="/static/chat.html?topic=habits" class="btn">Discuss Habit Change</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Pain Management</h3>
+                <p class="topic-description">Discover non-pharmaceutical approaches to managing chronic pain through hypnotic techniques.</p>
+                <a href="/static/chat.html?topic=pain" class="btn">Discuss Pain Management</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Fear & Phobias</h3>
+                <p class="topic-description">Address specific fears and phobias using gradual exposure techniques in a hypnotic state.</p>
+                <a href="/static/chat.html?topic=phobias" class="btn">Discuss Fear & Phobias</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Mindfulness</h3>
+                <p class="topic-description">Learn to incorporate mindfulness practices with hypnotherapy for improved well-being.</p>
+                <a href="/static/chat.html?topic=mindfulness" class="btn">Discuss Mindfulness</a>
+            </div>
+            
+            <div class="topic-card">
+                <h3 class="topic-title">Motivation</h3>
+                <p class="topic-description">Increase motivation and overcome procrastination through hypnotic suggestion.</p>
+                <a href="/static/chat.html?topic=motivation" class="btn">Discuss Motivation</a>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2023 HypnoBot. All rights reserved.</p>
+    </footer>
+</body>
+</html> 
