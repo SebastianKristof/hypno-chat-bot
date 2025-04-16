@@ -2,77 +2,47 @@
 HypnoBot - A hypnotherapy chatbot powered by CrewAI agents.
 """
 
-import os
-import sys
-from pathlib import Path
-from typing import Dict, Optional, Any, List
 import logging
-import re
-from datetime import datetime
+from pathlib import Path
+from crewai import Crew, Process
+from src.hypnobot.config.loader import load_agents, load_tasks
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("hypnobot.v2")
-
-# Import CrewAI components
-from crewai import Crew, Agent, Task, Process
-from crewai.agent import Agent as CrewAgent
-from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
-
-# Import configuration loader
-from src.hypnobot.config.loader import load_yaml
+logger = logging.getLogger(__name__)
 
 class HypnoBot:
-    def __init__(self, config_dir: str = "src/hypnobot/config"):
-        self.config_dir = Path(config_dir)
-        self.agents = self._load_agents()
-        self.tasks = self._load_tasks()
+    def __init__(self):
+        self.config_path = Path("src/hypnobot/config")
+        self.agents = load_agents(self.config_path / "agents.yaml")
+        self.tasks = load_tasks(self.agents, self.config_path / "tasks.yaml")
+
+        # Assign categorization agent and task (fails fast if misconfigured)
+        self.categorizer = self.agents["categorizer"]
+        self.categorization_task = self.tasks["categorization_task"]
+        self.categorization_task.agent = self.categorizer
+
+        logger.warning(f"[TRACE INIT] categorization_task type: {type(self.categorization_task)}")
+
+
         self.crew = self._build_crew()
-
-        # Assign categorization agent and task explicitly for pre-check
-        self.categorizer = self.agents.get("categorizer")
-        self.categorization_task = self.tasks.get("categorization_task")
-        if self.categorization_task and self.categorizer:
-            self.categorization_task.agent = self.categorizer
-
-    def _load_agents(self) -> Dict[str, Agent]:
-        logger.info("Loading agents...")
-        agents_data = load_yaml(self.config_dir / "agents.yaml")
-        agents = {}
-        for name, config in agents_data.items():
-            tools = config.get("tools", [])
-            agents[name] = Agent(
-                role=config["role"],
-                goal=config["goal"],
-                backstory=config["backstory"],
-                verbose=config.get("verbose", False),
-                memory=config.get("memory", False),
-                tools=[],  # You can inject tools later if needed
-            )
-        return agents
-
-    def _load_tasks(self) -> Dict[str, Task]:
-        logger.info("Loading tasks...")
-        tasks_data = load_yaml(self.config_dir / "tasks.yaml")
-        tasks = {}
-        for name, config in tasks_data.items():
-            tasks[name] = Task(
-                description=config["description"],
-                expected_output=config["expected_output"],
-                agent=None  # Linked later in crew definition or dynamically
-            )
-        return tasks
 
     def _build_crew(self) -> Crew:
         logger.info("Assembling Crew...")
-        # Define the process flow
+
+        task_agent_map = {
+            "initial_response_task": "support_agent",
+            "safety_check_task": "safety_officer",
+            "writing_improvement_task": "writing_coach",
+            "accessibility_task": "accessibility_agent"
+        }
+
         task_list = []
-        for task_name in ["initial_response_task", "safety_check_task", "writing_improvement_task", "accessibility_task"]:
+        for task_name, agent_key in task_agent_map.items():
             task = self.tasks[task_name]
-            agent_key = task_name.replace("_task", "")
             if not task.agent:
-                task.agent = self.agents.get(agent_key)
+                task.agent = self.agents[agent_key]
             task_list.append(task)
 
         return Crew(
@@ -80,6 +50,7 @@ class HypnoBot:
             tasks=task_list,
             process=Process.sequential
         )
+
 
     def process_input(self, user_input: str) -> str:
         try:

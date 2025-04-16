@@ -1,0 +1,53 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# ⚙️ Cursor AI Coding Assistant Rules for HypnoBot (CrewAI)
+
+## 🧠 Project Context
+
+You're working with [CrewAI](https://github.com/joaomdmoura/crewai), a framework for orchestrating role-based autonomous AI agents in Python.
+
+This project uses:
+
+- `crewai` for agent orchestration
+- `crewai-tools` for `@tool`-decorated integrations
+- YAML files for defining agents and tasks
+- A custom `loader.py` that creates real `Agent(...)` and `Task(...)` instances from config
+- A `FastAPI` interface in `api.py`
+
+## 📚 Primary Sources of Truth
+
+> ✅ Always consult these before inferring anything:
+
+- [CrewAI GitHub (official repo)](https://github.com/joaomdmoura/crewai)
+- [CrewAI official docs](https://docs.crewai.com)
+- Internal source code in `src/hypnobot/`
+
+Avoid relying on assumptions about LangChain tools, memory, or outdated `crewai` versions.
+
+## ❌ Avoid These Pitfalls
+
+- Do **not** Assume `AgentConfig`, `Tool.from_yaml`, or `Task.name` exist
+- Do **not** Suggest code based on deprecated hardcoded Python-only agents
+- Do **not** Confuse `crewai` with `embedchain` or `llamaindex` unless explicitly used
+- Do **not** Attempt to infer YAML schema — it's already implemented in `loader.py`
+
+## ✅ How the Code Works
+
+- Agents and tasks are defined in `agents.yaml` and `tasks.yaml`
+- They are loaded using `load_agents()` and `load_tasks()` from `loader.py`
+- `Task.agent` is dynamically assigned after instantiation
+- `tools` are mapped from a registry in `loader.py` (e.g. `hypnotherapy_methodology_tool`)
+- The agent that uses RAG is `support_agent`
+- Categorization is a standalone pre-check task before crew execution
+
+## 🔧 Tips for Better Suggestions
+
+If you're not sure how a CrewAI component works:
+
+```plaintext
+"Please reference https://github.com/joaomdmoura/crewai for class source"
+"Use the structure defined in loader.py to resolve agent/task objects"
+"All CrewAI agents require a valid llm=... (usually ChatOpenAI)"
