@@ -4,9 +4,11 @@ import contextlib
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+from fastapi.responses import FileResponse
 
 # Load environment variables
 load_dotenv()
@@ -58,6 +60,22 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
+
+# Mount static files directory
+static_dir = Path(__file__).resolve().parent / "static"
+if not static_dir.exists():
+    static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# Serve index.html at root path
+@app.get("/")
+async def get_index():
+    """Serve the frontend index.html file."""
+    index_path = static_dir / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")
 
 @app.post("/api/chat", response_model=HypnoBotResponse)
 async def chat(request: HypnoBotRequest):
