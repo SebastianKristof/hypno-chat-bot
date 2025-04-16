@@ -1,0 +1,1 @@
+# HypnoBot config package initialization 

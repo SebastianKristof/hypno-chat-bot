@@ -1,0 +1,49 @@
+categorization_task:
+  description: >
+    Classify the inquiry. If it's unsafe, off-topic, or a medical emergency, mark it as such.
+    Otherwise, pass it through as APPROPRIATE.
+
+    Inquiry:
+    {user_input}
+  expected_output: >
+    One of: APPROPRIATE, INAPPROPRIATE, MEDICAL_REFERRAL, TROLLING
+    + One-sentence rationale.
+
+initial_response_task:
+  description: >
+    Generate a warm and informative response to the user’s hypnotherapy-related question.
+    Use only verified methods from the practice.
+
+    Inquiry:
+    {user_input}
+  expected_output: >
+    A 1–4 paragraph informative response, accurate to practice methodology.
+
+safety_check_task:
+  description: >
+    Review the assistant's response to remove or correct anything that may be misleading,
+    unethical, medically inappropriate, or risky.
+
+    Draft:
+    {chatbot_response}
+  expected_output: >
+    A cleaned and ethically sound response.
+
+writing_improvement_task:
+  description: >
+    Refine the response for tone, empathy, and writing quality.
+
+    Response:
+    {chatbot_response}
+  expected_output: >
+    A rewritten version that flows well and sounds professional and caring.
+
+accessibility_task:
+  description: >
+    Adjust the message to be understandable by the general public,
+    at a high school reading level or below, without losing key meaning.
+
+    Message:
+    {chatbot_response}
+  expected_output: >
+    A final version that is simple, kind, and easy to grasp.
