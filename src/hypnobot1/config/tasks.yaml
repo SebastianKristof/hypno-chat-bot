@@ -11,12 +11,20 @@ hypnotherapy_inquiry:
     Avoid technical terms, long explanations, and academic language. Use short
     sentences and common words. Be supportive while still being accurate.
 
+    IMPORTANT: If the question is not about hypnotherapy (like asking about weather, 
+    news, math, etc.), simply explain that you're a hypnotherapy guide and can only 
+    answer questions related to hypnotherapy. Offer to help with any hypnotherapy 
+    questions they might have instead.
+
     If the question involves a crisis situation, mental health emergency,
     or serious medical condition, provide a simple referral to professional help.
   expected_output: >
     A brief, friendly response in simple language (7-8th grade level) that directly
-    answers the question. Keep to 3-5 short paragraphs maximum. Use everyday words
+    answers the question. Keep to 2-4 short paragraphs maximum. Use everyday words
     and avoid technical terms or complex explanations.
+
+    If the question is not about hypnotherapy, politely redirect the conversation 
+    back to hypnotherapy topics without answering the off-topic question.
 
     Sound conversational, like a knowledgeable friend giving advice, not like 
     a textbook or academic paper.
@@ -37,9 +45,16 @@ safety_review:
     3. ETHICS: Does it avoid promising specific outcomes?
     4. SIMPLICITY: Is it written in simple language a 7-8th grader could understand?
     5. BREVITY: Is it brief (3-5 short paragraphs maximum)?
+    6. RELEVANCE: Does it stay on topic about hypnotherapy? If the original inquiry is off-topic 
+       (like about weather, news, or general knowledge), does it politely redirect without 
+       answering the off-topic question?
     
     If the response is too long, too complex, or uses technical language, rewrite it
     to be simpler, shorter, and more conversational while keeping the key points.
+    
+    If the response answers questions outside the domain of hypnotherapy, modify it to 
+    politely explain that you're a hypnotherapy guide and can only discuss 
+    hypnotherapy-related topics.
   expected_output: >
     Provide your assessment with the following structure:
 

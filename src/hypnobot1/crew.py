@@ -10,9 +10,12 @@ from typing import Dict, Any, List, Optional
 from crewai import Agent, Task, Crew
 from langchain_community.chat_models import ChatOpenAI
 
-from hypnobot1.utils import get_logger, load_config, get_config_path
+from hypnobot1.utils import get_logger, load_config, get_config_path, calculate_cost
 
 logger = get_logger(__name__)
+
+logger.info("Using direct token tracking through CrewAI's built-in mechanisms")
+
 
 class HypnoBot1Crew:
     """Hypnotherapy chatbot crew using the CrewAI framework.
@@ -285,11 +288,83 @@ class HypnoBot1Crew:
             logger.error(f"Error parsing QA review: {e}")
             return result
     
+    def _manually_track_token_usage(self, crew_obj) -> Dict[str, int]:
+        """Manually calculate token usage by checking crew's callback_manager.
+        
+        Args:
+            crew_obj: The CrewAI crew object
+            
+        Returns:
+            Dictionary with token usage metrics
+        """
+        token_usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "successful_requests": 0
+        }
+        
+        try:
+            # First try the calculate_usage_metrics method
+            if hasattr(crew_obj, 'calculate_usage_metrics'):
+                try:
+                    crew_obj.calculate_usage_metrics()
+                    logger.info("Called calculate_usage_metrics()")
+                except Exception as e:
+                    logger.warning(f"Error calculating usage metrics: {e}")
+            
+            # Try to access the usage_metrics attribute
+            if hasattr(crew_obj, 'usage_metrics'):
+                try:
+                    metrics = crew_obj.usage_metrics
+                    logger.info(f"Got usage_metrics: {metrics}")
+                    
+                    # Try to extract values from metrics object
+                    token_usage["total_tokens"] = getattr(metrics, "total_tokens", 0)
+                    token_usage["prompt_tokens"] = getattr(metrics, "prompt_tokens", 0)
+                    token_usage["completion_tokens"] = getattr(metrics, "completion_tokens", 0)
+                    token_usage["successful_requests"] = getattr(metrics, "successful_requests", 0)
+                    
+                    # If we got at least one non-zero value, we're good
+                    if token_usage["total_tokens"] > 0 or token_usage["prompt_tokens"] > 0:
+                        logger.info(f"Successfully extracted token usage: {token_usage}")
+                        return token_usage
+                except Exception as e:
+                    logger.warning(f"Error accessing usage_metrics: {e}")
+            
+            # If we're here, we need to estimate token usage
+            logger.warning("Unable to get accurate token usage, using estimate")
+            
+            # Rough estimate based on typical token ratios
+            if hasattr(crew_obj, 'callbacks'):
+                cb_count = len(getattr(crew_obj, 'callbacks', []))
+                logger.info(f"Crew has {cb_count} callbacks")
+        
+            # Estimate based on typical patterns
+            # Each task typically uses at least several thousand tokens
+            num_tasks = len(getattr(crew_obj, 'tasks', []))
+            num_agents = len(getattr(crew_obj, 'agents', []))
+            
+            logger.info(f"Crew has {num_tasks} tasks and {num_agents} agents")
+            
+            # Very rough estimate assuming ~3000 prompt tokens and ~1000 completion tokens per task
+            token_usage["prompt_tokens"] = num_tasks * 3000
+            token_usage["completion_tokens"] = num_tasks * 1000
+            token_usage["total_tokens"] = token_usage["prompt_tokens"] + token_usage["completion_tokens"]
+            token_usage["successful_requests"] = num_tasks
+            
+            logger.info(f"Estimated token usage: {token_usage}")
+            
+        except Exception as e:
+            logger.error(f"Error tracking token usage: {e}")
+        
+        return token_usage
+        
     def process_message(self, user_message: str, user_name: str = "User") -> Dict[str, Any]:
         """Process a user message using the CrewAI approach with proper agent collaboration.
         
         This implementation leverages CrewAI's built-in task sequencing and agent collaboration
-        rather than creating separate crews and manually parsing outputs.
+        using a single crew with multiple agents and tasks.
         
         Args:
             user_message: The user's message
@@ -305,24 +380,33 @@ class HypnoBot1Crew:
                 "user_name": user_name
             }
             
-            # Create and execute the inquiry task first
+            # Create all tasks
             inquiry_tasks = self._create_tasks(context)
             if not inquiry_tasks:
                 raise ValueError("Failed to create inquiry task")
             
-            # Set up the inquiry crew
+            # Get the inquiry task first
+            inquiry_task = inquiry_tasks[0]
+            
+            # Create the hypnotherapy response first
+            logger.info(f"Processing inquiry from {user_name}: {user_message[:50]}...")
+            
+            # Set up the inquiry crew with just one task to get the initial response
             inquiry_crew = Crew(
                 agents=[agent for agent in self.agents.values()],
-                tasks=[inquiry_tasks[0]],  # Just the first task (hypnotherapy inquiry)
+                tasks=[inquiry_task],
                 verbose=True,
-                memory=True  # Enable crew memory
+                memory=True
             )
             
             # Get the inquiry response
-            logger.info(f"Processing inquiry from {user_name}: {user_message[:50]}...")
             inquiry_result = inquiry_crew.kickoff()
             
-            # Extract the text from the inquiry result if needed
+            # Track token usage for inquiry
+            inquiry_token_usage = self._manually_track_token_usage(inquiry_crew)
+            logger.info(f"Inquiry token usage: {inquiry_token_usage}")
+            
+            # Extract the inquiry response text
             inquiry_text = inquiry_result
             if hasattr(inquiry_result, 'raw_output'):
                 logger.info("Converting inquiry CrewOutput to string using raw_output")
@@ -334,36 +418,58 @@ class HypnoBot1Crew:
                 logger.info(f"Converting inquiry result of type {type(inquiry_result)} to string")
                 inquiry_text = str(inquiry_result)
                 
-            # Add the response to the context for the review task
+            # Update the context with the hypnotherapy response
             context["hypnotherapy_response"] = inquiry_text
             
-            # Create and process the review task
-            review_tasks = self._create_tasks(context)
-            if len(review_tasks) < 2:
-                logger.warning("Failed to create review task, skipping review")
+            # Create all tasks including the review task with updated context
+            all_tasks = self._create_tasks(context)
+            if len(all_tasks) < 2:
+                logger.warning("Failed to create review task, returning inquiry result only")
+                
+                # Calculate cost for inquiry
+                inquiry_model = self.agents_config.get("hypnotherapy_guide", {}).get("llm", {}).get("model", "gpt-4o-mini")
+                inquiry_cost = calculate_cost(inquiry_token_usage, inquiry_model)
+                
                 return {
                     "original_response": inquiry_text,
                     "final_response": inquiry_text,
                     "safety_level": 0,
+                    "token_usage": inquiry_token_usage,
+                    "cost_info": inquiry_cost,
                     "metadata": {
                         "review_skipped": True
                     }
                 }
             
-            # Set up the review crew
-            review_crew = Crew(
+            # Now set up a single crew with both agents and both tasks
+            crew = Crew(
                 agents=[agent for agent in self.agents.values()],
-                tasks=[review_tasks[1]],  # The second task (safety review)
+                tasks=all_tasks,  # Include both inquiry and review tasks
                 verbose=True,
-                memory=True  # Enable crew memory
+                memory=True
             )
             
-            # Get the review result
-            logger.info("Processing safety review...")
-            review_result = review_crew.kickoff()
+            # Run the full crew process with both tasks
+            logger.info("Processing with full crew (inquiry + review)...")
+            result = crew.kickoff()
             
-            # Parse the review result
-            parsed_review = self._parse_qa_review(review_result)
+            # Track token usage for full crew
+            token_usage = self._manually_track_token_usage(crew)
+            logger.info(f"Full crew token usage: {token_usage}")
+            
+            # Calculate costs based on both agents' models
+            inquiry_model = self.agents_config.get("hypnotherapy_guide", {}).get("llm", {}).get("model", "gpt-4o-mini")
+            review_model = self.agents_config.get("safety_specialist", {}).get("llm", {}).get("model", "gpt-4o-mini")
+            
+            # Calculate cost info
+            cost_info = calculate_cost(token_usage, inquiry_model)
+            cost_info['models'] = {
+                'inquiry': inquiry_model,
+                'review': review_model
+            }
+            
+            # Parse the review result from the crew output
+            parsed_review = self._parse_qa_review(result)
             
             # Determine the final response
             final_response = parsed_review["modified_response"]
@@ -376,10 +482,13 @@ class HypnoBot1Crew:
                 "original_response": inquiry_text,
                 "final_response": final_response,
                 "safety_level": parsed_review["safety_level"],
+                "token_usage": token_usage,
+                "cost_info": cost_info,
                 "metadata": {
-                    "review_result": str(review_result),
+                    "review_result": str(result),
                     "modifications": parsed_review["modifications"],
-                    "reasoning": parsed_review["reasoning"]
+                    "reasoning": parsed_review["reasoning"],
+                    "inquiry_token_usage": inquiry_token_usage
                 }
             }
             
@@ -389,5 +498,7 @@ class HypnoBot1Crew:
                 "original_response": "",
                 "final_response": "I apologize, but I encountered an issue processing your message. Please try again.",
                 "safety_level": 2,  # Cautious middle ground
+                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0, "successful_requests": 0},
+                "cost_info": {"total_cost": 0, "input_cost": 0, "output_cost": 0, "models": {}, "tokens": {"prompt": 0, "completion": 0, "total": 0}},
                 "metadata": {"error": str(e)}
             } 
