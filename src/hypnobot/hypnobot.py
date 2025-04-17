@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from crewai import Crew, Process, Task
 from src.hypnobot.loader import load_agents, load_tasks
 from src.hypnobot.task_factory import build_task
+from src.hypnobot.service_message_detector import is_service_message
 import re
 # Load environment variables
 load_dotenv()
@@ -42,6 +43,11 @@ class HypnoBot:
         result = cat_task.agent.execute_task(cat_task)
         logger.info(f"Categorization raw result: {result}")
 
+        # Check if result is a service message
+        if is_service_message(result):
+            logger.warning("Received service message instead of real answer for categorization")
+            return "I'm having trouble processing your request right now. Please try again in a moment."
+
         label_line = result.strip().splitlines()[0].upper()
 
         logger.info(f"Categorization: {label_line}")
@@ -57,5 +63,12 @@ class HypnoBot:
             task.description = safe_format_description(task.description, user_input)
 
         # Run the full crew
-        return self.crew.kickoff()
+        crew_result = self.crew.kickoff()
+        
+        # Check if the crew result is a service message
+        if is_service_message(crew_result):
+            logger.warning("Received service message instead of real answer from crew")
+            return "I'm having trouble processing your request right now. Please try again in a moment."
+            
+        return crew_result
 
