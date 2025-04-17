@@ -1,4 +1,5 @@
 categorization_task:
+  agent: categorizer
   description: >
     Classify the inquiry. If it's unsafe, off-topic, or a medical emergency, mark it as such.
     Otherwise, pass it through as APPROPRIATE.
@@ -10,6 +11,7 @@ categorization_task:
     + One-sentence rationale.
 
 initial_response_task:
+  agent: support_agent
   description: >
     Generate a warm and informative response to the user's hypnotherapy-related question.
     Use only verified methods from the practice.
@@ -23,6 +25,7 @@ initial_response_task:
     A 1–4 paragraph informative response, accurate to practice methodology.
 
 safety_check_task:
+  agent: safety_officer
   description: >
     Review the assistant's response to remove or correct anything that may be misleading,
     unethical, medically inappropriate, or risky.
@@ -36,6 +39,7 @@ safety_check_task:
     A cleaned and ethically sound response.
 
 writing_improvement_task:
+  agent: writing_coach
   description: >
     Refine the response for tone, empathy, and writing quality.
 
@@ -48,6 +52,7 @@ writing_improvement_task:
     A rewritten version that flows well and sounds professional and caring.
 
 accessibility_task:
+  agent: accessibility_agent
   description: >
     Adjust the message to be understandable by the general public,
     at a high school reading level or below, without losing key meaning.
