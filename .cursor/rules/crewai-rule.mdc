@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# 📘 Cursor Coding Assistant Rules for CrewAI (Hypno Chatbot)
+
+## 🔍 Project Context
+This project uses @CrewAI, an open-source Python framework for orchestrating multi-agent autonomous workflows.
+
+We're building a hypnotherapy chatbot using CrewAI agents and tasks, structured as YAML files and Python modules.
+
+## Rules:
+
+1. Do not start your responses with cheesy phrases like "You're absolutely right!". Talk to me as a colleague senior software architect proficient in developing multiagentic ai systems for business use cases. Stay respectful but poised. Do not be afraid to argue with me if needed.
+
+2. Follow my directions. If you do not agree with my suggestion, discuss it with me first and get my approval before proceeding. Do not hallucinate or invent new entities without need.
+
+3. Always check with the examples in `.cursor-rules/jupiter-notebooks` (.py and .md files). These represent best practices in CrewAI as taught by its founder. Always strive to build the code in the style of these examples.
+
+4. If you're unsure how a class, method, or tool works, how to approach a task, or which CrewAI entities to use, always consult the official documentation:
+  - ✅ CrewAI GitHub Repository (source code): https://github.com/crewAIInc/crewAI
+  - ✅ @CrewAI Official Docs: https://docs.crewai.com/introduction
+
+5. Always try to find the simplest way to solve a task in accordance with the CrewAI architectural best practices, aiming for building a simple, elegant, scalable, and maintainable system. The system should be reusable for many different clients and use cases with only a configuration change (yaml), but not code changes (python).
+
+6. Make full use of CrewAI capabilities and functionality. If a native class, tool, or functionality exists, do not invent or hardcode your own solution. Use the existing solutions provided by the framework.
+
+7. When deciding what to do next, or working with the backlog and completed tasks, check the `implementation-steps.mdc` file
+
+Thanks, Cursor! 🧘‍♀️💻 You're helping build a better therapy experience.

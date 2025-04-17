@@ -1,0 +1,138 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# ⚙️ Cursor AI Coding Assistant Rules for HypnoBot (CrewAI)
+
+## 🧠 Project Context
+
+You're working with [CrewAI](mdc:https:/github.com/joaomdmoura/crewai), a framework for orchestrating role-based autonomous AI agents in Python.
+
+This project uses:
+
+- `crewai` for agent orchestration
+- `crewai-tools` for `@tool`-decorated integrations
+- YAML files for defining agents and tasks
+- A custom `loader.py` that creates real `Agent(...)` and `Task(...)` instances from config
+- A `FastAPI` interface in `api.py`
+
+## 📚 Primary Sources of Truth
+
+> ✅ Always consult these before inferring anything:
+
+- [CrewAI GitHub (official repo)](mdc:https:/github.com/joaomdmoura/crewai)
+- [CrewAI official docs](mdc:https:/docs.crewai.com)
+- Internal source code in `src/hypnobot/`
+
+Avoid relying on assumptions about LangChain tools, memory, or outdated `crewai` versions.
+
+Absolutely! Here's a well-formatted **`CURSORRULES.md`** version you can drop into your repo root. It's styled for readability and works great as team documentation too.
+
+---
+
+### ✅ `CURSORRULES.md`
+
+> Best practices and enforced design rules for working with **CrewAI 0.11.0** in this project.
+
+---
+
+#### 🧠 Task & Agent Handling
+
+---
+
+**🔹 Use TaskFactory to dynamically construct tasks per input**  
+**Why?** Avoids shared state or output bleed from one execution to another.  
+**How?** Build tasks inside a factory or recreate them inside your `process()` method.
+
+```python
+task = Task(
+  description=template.description.format(user_input=input),
+  expected_output=template.expected_output,
+  agent=template.agent
+)
+```
+
+---
+
+**🔹 Avoid deepcopy on Pydantic-based objects (Agent, Task)**  
+**Why?** CrewAI uses Pydantic under the hood, and `deepcopy()` fails due to internal locks or threads.  
+**How?** Re-instantiate instead of copying. Use a factory pattern.
+
+---
+
+#### 📝 Task Description Formatting
+
+---
+
+**🔹 Only format `user_input` into task descriptions**  
+**Why?** Leave references like `{previous_task.output}` untouched for runtime resolution.  
+**How?** Do:
+
+```python
+task.description = task.description.format(user_input=user_input)
+```
+
+Don’t:
+
+```python
+task.description = task.description.format(user_input=user_input, categorization_task_output="...")  # ❌
+```
+
+---
+
+**🔹 Never manually interpolate `{task.output}` placeholders**  
+**Why?** This breaks runtime chaining logic.  
+**How?** Trust CrewAI to resolve `{some_task.output}` internally.
+
+---
+
+#### 🧪 Crew Execution
+
+---
+
+**🔹 Do not pass inputs to `crew.kickoff()`**  
+**Why?** The signature in `crewai==0.11.0` does not accept `inputs=`.  
+**How?** Format inputs directly into descriptions and then just:
+
+```python
+crew.kickoff()
+```
+
+---
+
+#### 🧾 Versioning & Logging
+
+---
+
+**🔹 Lock your CrewAI version**  
+**Why?** API surface and behavior can change across versions.  
+**How?**
+
+```txt
+# requirements.txt
+crewai==0.11.0
+```
+
+---
+
+**🔹 Log agent/task types when loading**  
+**Why?** Catch issues where `agent=...` might still be a `dict`.  
+**How?**
+
+```python
+logger.debug(f"[DEBUG] Loaded {task_name} — agent type: {type(task.agent)}")
+```
+
+---
+
+#### ✅ Design Philosophy
+
+---
+
+**🔹 One responsibility per task**  
+**Why?** Keeps logic modular, easier to debug and evolve.  
+**Examples:** Categorization → Response generation → Safety check → Rewrite → Accessibility.
+
+
+

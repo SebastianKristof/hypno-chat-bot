@@ -1,34 +1,40 @@
-chat_task:
+categorization_task:
+  agent: categorizer
   description: >
-    Respond to the user's message in a calm, empathetic, and informative tone. Cover all relevant aspects.
-    Be clear and friendly. Your answers should reflect the actual services of the hypnotherapy practice.
-    
-    Use the knowledge tool to retrieve accurate information about hypnotherapy methods when needed.
-    Always maintain appropriate boundaries and never promise specific outcomes.
-    
-    The user's message:
-    {user_input}
+    Determine if the question is appropriate, safe, and related to hypnotherapy.
+    Inquiry: {user_input}
   expected_output: >
-    A calming, clear response that addresses the user's question in under 4 paragraphs.
-  agent: client_agent
-  context: []
+    One of: APPROPRIATE, INAPPROPRIATE, MEDICAL_REFERRAL, TROLLING + One-sentence explanation.
 
-qa_review_task:
+initial_response_task:
+  agent: support_agent
   description: >
-    Carefully review the assistant's message for tone, clarity, and therapeutic soundness.
-    Adjust for language, promises, or claims that may be misleading or overly medicalized.
-    
-    Use the safety evaluation tool to detect any potential issues with the content.
-    Evaluate against these criteria:
-    1. SAFETY: Does the content involve crisis situations, self-harm, or acute psychological distress?
-    2. SCOPE: Is the content outside the boundaries of hypnotherapy information?
-    3. ETHICS: Does the content violate ethical standards of hypnotherapy practice?
-    4. ACCURACY: Is the proposed response factually accurate and properly representing hypnotherapy's capabilities?
-    
-    Chatbot response:
-    {chatbot_response}
+    Generate a warm and helpful response to the user's question.
+    Inquiry: {user_input}
+    Categorization: {categorization_task.output}
   expected_output: >
-    A cleaned and final response ready to be sent to the user, improved if needed for tone, accuracy, and ethics.
-    Include a safety level assessment (0-4) and any modifications made to the original response.
-  agent: qa_agent
-  context: [] 
+    1–4 paragraph response relevant to hypnotherapy best practices.
+
+safety_check_task:
+  agent: safety_officer
+  description: >
+    Review the assistant's draft and fix any unsafe or misleading advice.
+    Draft Response: {initial_response_task.output}
+  expected_output: >
+    Ethically sound and safe response.
+
+writing_improvement_task:
+  agent: writing_coach
+  description: >
+    Rewrite the response for tone and professionalism.
+    Safety Checked Response: {safety_check_task.output}
+  expected_output: >
+    Clear and emotionally engaging final draft.
+
+accessibility_task:
+  agent: accessibility_agent
+  description: >
+    Make the response easy to understand for a general audience.
+    Improved Response: {writing_improvement_task.output}
+  expected_output: >
+    Final simplified version at a high school reading level.
